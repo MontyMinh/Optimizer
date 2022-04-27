@@ -1,0 +1,27 @@
+# Ignore files
+Development\ .ipynb
+MANIFEST.IN
+setup.py
+.DS_Store
+*DS_Store
+
+
+
+
+# Ignore directories
+__pycache__/
+*__pycache__/
+build/
+dist/
+.idea/
+.ipynb_checkpoints/
+.git/
+
+
+# Ignore Jupyter Notebooks
+*.ipynb
+# Ignore .log file
+*.log
+
+#Ignore .pyc file
+*.pyc
