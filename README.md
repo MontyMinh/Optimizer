@@ -1,6 +1,4 @@
 # Model4.0
-Model 4.0 is the latest update on the list of models for optimizing volume distribution. Owned by De Heus LLC
-
 Model 4.0 optimize based on inbound and outbound logistics cost. It improves on several aspect of Model 3.0.
 
 1. It features a more vectorized implementation of the constraints matrix
@@ -12,3 +10,5 @@ Model 4.0 optimize based on inbound and outbound logistics cost. It improves on 
 Technical details of these improvements are found in the [white paper].
 
 [white paper]: https://github.com/MontyMinh/Model4.0/blob/main/WhitePaper.pdf "WhitePaper.pdf"
+
+Model 4.0 is the latest update on the list of models for optimizing volume distribution. Owned by De Heus LLC
