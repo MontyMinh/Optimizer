@@ -2,8 +2,6 @@
 All notable changes to this project will be documented in this file.
  
 ## [0.0.0] - 27-4-2022
-  
-Here we would have the update steps for 1.2.4 for people to follow.
  
 ### Added
  
