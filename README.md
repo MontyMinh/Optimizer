@@ -9,6 +9,6 @@ Model 4.0 optimize based on inbound and outbound logistics cost. It improves on 
 4. It also allows for capacity constraints on a subset of products.
 5. The documentation of the program is more extensive and detailed.
 
-Technical details of these improvements are found in [my linked text].
+Technical details of these improvements are found in the [white paper].
 
-  [my linked text]: https://www.google.com/ "Optional title for mouse hover"
+[white paper]: https://github.com/MontyMinh/Model4.0/blob/main/WhitePaper.pdf "WhitePaper.pdf"
