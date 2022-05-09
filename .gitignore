@@ -1,5 +1,4 @@
 # Ignore files
-Development\ .ipynb
 MANIFEST.IN
 setup.py
 .DS_Store
