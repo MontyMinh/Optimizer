@@ -17,8 +17,6 @@ dist/
 .git/
 
 
-# Ignore Jupyter Notebooks
-*.ipynb
 # Ignore .log file
 *.log
 
