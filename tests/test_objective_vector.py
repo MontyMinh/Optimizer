@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-import sys # Get the path to the "model" directory
+import sys  # Get the path to the "model" directory
 sys.path.append("C:\\Users\\monty.minh\\Documents\\Model4.0")
 
 from model.modeldata import Data
@@ -21,7 +21,7 @@ class DataTest:
         Generate random inputs for objective vector unit test
 
         For inbound cost vector, we first generate the
-        vector and split it into subvectors per product.
+        vector and split it into sub-vectors per product.
 
         For outbound cost vector, we first randomize the
         rectangular dimension. Then we generate a random
@@ -35,7 +35,7 @@ class DataTest:
         # Inbound Cost Vector
         cls.inbound_cost_vector = np.random.rand(np.random.randint(20, 100))
 
-        Data.dimF = len(cls.inbound_cost_vector) # number of factor-product
+        Data.dimF = len(cls.inbound_cost_vector)  # number of factor-product
 
         split_index_in = np.sort(
             np.random.choice(np.arange(len(cls.inbound_cost_vector)),
@@ -71,13 +71,14 @@ class TestObjectiveVector(unittest.TestCase):
 
         """Compare construction with randomly generated random inputs"""
 
-        for _ in range(100): # Test 100 times
+        for _ in range(100):  # Test 100 times
             # Generate Random Inbound Inputs
             DataTest.generate_random_inputs()
             # Construct the correct vector
             generate_objective_vector()
 
             self.assertTrue(np.array_equal(DataTest.objective_vector, Data.objective_vector))  # add assertion here
+
 
 if __name__ == '__main__':
     unittest.main()
