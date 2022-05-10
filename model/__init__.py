@@ -11,3 +11,4 @@ This folder contains the Python code of Model 4. It contains 4 files:
 """
 
 import math
+import numpy as np
