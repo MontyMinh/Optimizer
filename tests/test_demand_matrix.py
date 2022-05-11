@@ -28,23 +28,27 @@ class DataTest:
         cls.no_products = np.random.randint(1, 5)
 
         if cls.no_customers == 1:
-            cls.customer_names = dict(zip(range(cls.no_products), [np.array([0])] * cls.no_products))
-        else: # Allow for one customer
+            cls.customer_names = dict(
+                zip(range(cls.no_products), [np.array([0])] * cls.no_products))
+        else:  # Allow for one customer
             cls.customer_names = {
                 prod: np.sort(
                     np.random.choice(np.arange(cls.no_customers),
-                                     size=np.random.randint(1, cls.no_customers),
+                                     size=np.random.randint(1,
+                                                            cls.no_customers),
                                      replace=False))
                 for prod in range(cls.no_products)
             }
 
         if cls.no_factories == 1:
-            cls.factory_names = dict(zip(range(cls.no_products), [np.array([0])] * cls.no_products))
-        else: # Allow for one factory
+            cls.factory_names = dict(
+                zip(range(cls.no_products), [np.array([0])] * cls.no_products))
+        else:  # Allow for one factory
             cls.factory_names = {
                 prod: np.sort(
                     np.random.choice(np.arange(cls.no_factories),
-                                     size=np.random.randint(1, cls.no_factories),
+                                     size=np.random.randint(1,
+                                                            cls.no_factories),
                                      replace=False))
                 for prod in range(cls.no_products)
             }
@@ -60,7 +64,7 @@ class DataTest:
             for prod in range(cls.no_products)
         }
 
-        Data.product_list = list(range((cls.no_products)))
+        Data.product_list = list(range(cls.no_products))
 
         Data.dimF = sum(Data.factory_sizes.values())
         Data.dimC = sum(Data.customer_sizes.values())

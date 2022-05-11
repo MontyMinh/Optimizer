@@ -1,5 +1,9 @@
 class Data:
-    
+    outbound_combination_matrix = None
+    inbound_combination_matrix = None
+    factory_list = None
+    factory_names = None
+    efficiency_per_product = None
     demand_matrix = None
     dimF, dimC, dimFC = None, None, None
     product_list = None
