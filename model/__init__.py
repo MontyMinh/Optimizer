@@ -1,3 +1,8 @@
+import math
+import numpy as np
+from scipy.linalg import block_diag
+from functools import reduce
+
 """
 This folder contains the Python code of Model 4. It contains 4 files:
 
@@ -9,7 +14,3 @@ This folder contains the Python code of Model 4. It contains 4 files:
 - ui.py, file for hosting the user interface for interacting with the full optimization program.
 
 """
-
-import math
-import numpy as np
-from scipy.linalg import block_diag

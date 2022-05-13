@@ -67,19 +67,20 @@ def generate_demand_matrix():
     ----------------------
     Data.inbound_demand_matrix: numpy.ndarray
         All zeros matrix for the inbound section of the demand matrix.
-        Rows: Σ|C| (total number of customer across all products)
-        Columns: Σ|F| (total number of factories across
+        #Rows: Σ|C| (total number of customer across all products)
+        #Columns: Σ|F| (total number of factories across
         all products)
         Major order: 1.product, 2.factory, 3.customer
 
     Data.outbound_demand_matrix: numpy.ndarray
         Block diagonal matrix for the outbound section of the demand matrix.
-        Rows: Σ|C| (total number of customer across all products)
-        Columns: Σ|FxC| (total number of factories x customer across
+        #Rows: Σ|C| (total number of customer across all products)
+        #Columns: Σ|FxC| (total number of factories x customer across
         all products)
 
     Data.demand_matrix: numpy.ndarray
-        Demand matrix to realize customers' demand
+        Demand matrix to realize customers' demand, made by horizontally
+        concatenate the inbound and outbound demand matrix.
 
     """
 
@@ -143,16 +144,16 @@ def generate_combination_matrices():
         Dictionary of block diagonal matrices containing the production
         efficiency of a factory {product: associated matrix}. Each
         product corresponds to a matrix with:
-            - Columns: ∑|F| (total number of factories across all products)
-            - Rows: # Factories (total number of factories)
+            - #Columns: ∑|F| (total number of factories across all products)
+            - #Rows: # Factories (total number of factories)
 
     Data.outbound_combination_matrices: dict
         Dictionary of block diagonal matrices to apply outbound constraints
         on a per-factory basis. {product: associated matrix}. Each product
         corresponds to a matrix with:
-            - Column: ∑|FxC| (total number of factories x customers
+            - #Column: ∑|FxC| (total number of factories x customers
             across all products)
-            - Rows: # Factories (total
+            - #Rows: # Factories (total
             number of factories)
     """
 
@@ -213,19 +214,19 @@ def generate_combination_matrices():
                 for factory in Data.factory_list]
             for product in Data.product_list
         ]
-   ])
+    ])
 
     # Verify matrix dimension
-    # Inbound combination matrix dimension == (Σ|C|, Σ#Fx#P)
+    # Inbound combination matrix dimension == (Σ#Fx#P, Σ|C|)
     assert Data.inbound_combination_matrix.shape == (
         len(Data.factory_list) * len(Data.product_list), Data.dimF
-    ), 'Dimension of inbound combination matrix is incorrect (Σ|C|, Σ#Fx#P)'
+    ), 'Dimension of inbound combination matrix is incorrect (Σ#Fx#P, Σ|F|)'
 
-    # Outbound combination matrix dimension == (Σ|FxC|, Σ#Fx#P)
+    # Outbound combination matrix dimension == (Σ#Fx#P, Σ|FxC|)
     assert Data.outbound_combination_matrix.shape == (
         len(Data.factory_list) * len(Data.product_list),
-        Data.dimFC), 'Dimension of combination matrix is incorrect (Σ|FxC|, ' \
-                     'Σ#Fx#P)'
+        Data.dimFC), 'Dimension of combination matrix is incorrect (Σ#Fx#P, ' \
+                     'Σ|FxC|)'
 
     # Split the matrix into dictionary
     # Inbound combination dictionary
