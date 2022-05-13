@@ -1,4 +1,12 @@
 class Data:
+    inbound_supply_matrix = None
+    constraints_vector = None
+    supply_matrix = None
+    capacity_matrix = None
+    supply_rows = None
+    capacity_rows = None
+    capacity_volume = None
+    demand_volume = None
     supply_constraints = None
     inbound_combination_matrices = None
     outbound_combination_matrices = None

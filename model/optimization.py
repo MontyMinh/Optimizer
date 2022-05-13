@@ -4,8 +4,25 @@ from model.data import Data
 
 def generate_objective_vector():
     """
-    Output to data.py
-    ----------------------
+    Inputs to data.py
+    -----------------
+    Data.inbound_cost_per_product: dict
+        Dictionary containing the inbound cost to factories for all products
+
+    Data.outbound_cost_per_product: dict
+        Dictionary containing the outbound cost to factories fora all products
+
+    Data.dimF: int
+        Σ|F| (total number of factories across all products)
+
+    Data.dimC: int
+        Σ|C| (total number of customers across all products)
+
+    Data.dimFC: int
+        Σ|FxC| (total number of factories x customers across all products)
+
+    Outputs to data.py
+    ------------------
     Data.inbound_cost_vector: numpy.ndarray
         Dimension: Σ|F| (total number of factories across all products)
         Major Order: 1.product, 2.factory
@@ -26,14 +43,13 @@ def generate_objective_vector():
     assert isinstance(Data.outbound_cost_per_product,
                       dict), 'Outbound costs must be given in a dictionary'
 
-    # Verify length of dictionary
-    print(f'{Data.product_list}')
-    print(f'{Data.inbound_cost_per_product.keys()}')
-    print(f'{Data.outbound_cost_per_product.keys()}')
+    # Verify inputs dimension
     assert (len(Data.inbound_cost_per_product) == len(Data.product_list)), \
         'Number of products in Inbound cost per product is incorrect'
     assert (len(Data.outbound_cost_per_product) == len(Data.product_list)), \
         'Number of products in Outbound cost per product is incorrect'
+    assert np.all(np.array([Data.dimF, Data.dimC, Data.dimFC]) > 0), \
+        'Dimensions of constraints matrices must be positive'
 
     # Reshape dictionary inputs into vectors
     # Unpack inbound cost dictionary and stack into row vector
@@ -41,14 +57,15 @@ def generate_objective_vector():
         list(Data.inbound_cost_per_product.values()))
 
     # Unpack outbound cost dictionary in factory-then-customer major
-    Data.outbound_cost_vector = np.hstack(
-        [prod.flatten('F') for prod in
-         Data.outbound_cost_per_product.values()])
+    Data.outbound_cost_vector = np.hstack([
+        prod.flatten('F') for prod in Data.outbound_cost_per_product.values()
+    ])
 
     # Verify output dimension
     # Inbound cost vector dimension = (∑|F|)
     assert Data.inbound_cost_vector.shape == (
-        Data.dimF,), 'Dimension of the inbound cost vector is incorrect (∑|F|)'
+        Data.dimF,
+    ), 'Dimension of the inbound cost vector is incorrect (∑|F|)'
 
     # Outbound cost vector dimension = (∑|FxC|)
     assert Data.outbound_cost_vector.shape == (
@@ -56,8 +73,8 @@ def generate_objective_vector():
                       '∑|FxC|)'
 
     # Horizontally stack inbound and outbound cost into row vectors
-    Data.objective_vector = np.hstack([Data.inbound_cost_vector,
-                                       Data.outbound_cost_vector])
+    Data.objective_vector = np.hstack(
+        [Data.inbound_cost_vector, Data.outbound_cost_vector])
 
     # Verify positivity
     assert np.all(
@@ -66,8 +83,28 @@ def generate_objective_vector():
 
 def generate_demand_matrix():
     """
-    Output to data.py
-    ----------------------
+    Inputs from data.py
+    -------------------
+    Data.customer_sizes: dict
+        Dictionary containing the number of customer for all products
+
+    Data.factory_sizes: dict
+        Dictionary containing the number of factories for all products
+
+    Data.product_list: list
+        List of products to optimize
+
+    Data.dimF: int
+        Σ|F| (total number of factories across all products)
+
+    Data.dimC: int
+        Σ|C| (total number of customers across all products)
+
+    Data.dimFC: int
+        Σ|FxC| (total number of factories x customers across all products)
+
+    Outputs to data.py
+    ------------------
     Data.inbound_demand_matrix: numpy.ndarray
         All zeros matrix for the inbound section of the demand matrix.
         #Rows: Σ|C| (total number of customer across all products)
@@ -107,9 +144,10 @@ def generate_demand_matrix():
                   ), 'Factory sizes must be positive'
 
     # Verify input length
+    assert len(Data.product_list) > 0, 'Number of products in list to ' \
+                                       'optimize must be positive'
     assert (len(Data.customer_sizes) == len(Data.product_list)), \
         'Number of products in customer sizes is incorrect'
-
     assert (len(Data.factory_sizes) == len(Data.product_list)), \
         'Number of products in factory sizes is incorrect'
 
@@ -141,8 +179,28 @@ def generate_demand_matrix():
 
 def generate_combination_matrices():
     """
-    Output to data.py
-    ----------------------
+    Inputs to data.py
+    -----------------
+    Data.efficiency_per_product: dict
+        Dictionary of efficiency of all factories for all products
+
+    Data.factory_names: dict
+        Dictionary of factory names for all products
+
+    Data.product_list: list
+        List of products to optimize
+
+    Data.factory_list: list
+        List of factories to optimize
+
+    Data.dimF: int
+        Σ|F| (total number of factories across all products)
+
+    Data.dimFC: int
+        Σ|FxC| (total number of factories x customers across all products)
+
+    Outputs to data.py
+    ------------------
     Data.inbound_combination_matrices: dict
         Dictionary of block diagonal matrices containing the production
         efficiency of a factory {product: associated matrix}. Each
@@ -168,22 +226,37 @@ def generate_combination_matrices():
                       dict), 'Factory names must be given in a dictionary'
 
     # Verify inputs values
+    assert len(
+        Data.product_list) > 0, 'Number of products in list to ' \
+                                'optimize must be positive'
     assert len(Data.factory_list
-               ) > 0, 'Number of factories to optimize must be positive'
+               ) > 0, 'Number of factories in list to optimize must be ' \
+                      'positive'
     assert np.all(np.hstack(list(Data.efficiency_per_product.values())) > 0
                   ), 'Efficiency must be positive'
+    assert np.all(
+        np.array([len(prod) for prod in
+                  Data.factory_names.values()]) <= 0), 'There are no ' \
+                                                       'factories to ' \
+                                                       'optimize for!'
     assert np.all(
         np.array([len(prod) for prod in Data.factory_names.values()]) <= len(
             Data.factory_list)), 'There are more factory names than allowed'
 
     # Build the combination matrix
     """
-    Starting from the inside out, we first iterate over all the product. 
-    For a given product "p", we put the corresponding efficiency value  
-    in the place of the factories that produce the product and [] in the 
-    place of factories that don't. Then, we form each product into a block 
-    using the block_diag function. After which, we build the matrix using 
-    block_diag on all the previous blocks. Lastly, add a negative sign per
+    Starting from the inside out, we first 
+    iterate over all the product. 
+    For a given product "p", we put the 
+    corresponding efficiency value  
+    in the place of the factories that produce 
+    the product and [] in the 
+    place of factories that don't. Then, 
+    we form each product into a block 
+    using the block_diag function. After which, 
+    we build the matrix using 
+    block_diag on all the previous blocks. 
+    Lastly, add a negative sign per
     the model.
     """
 
@@ -251,8 +324,25 @@ def generate_combination_matrices():
 
 def generate_capacity_matrix():
     """
-    Output to data.py
-    ----------------------
+    Inputs to data.py
+    -----------------
+    Data.capacity_constraints: list
+        List of capacity constraints for by product combinations
+
+    Data.inbound_combination_matrices: dict
+        Dictionary of inbound combination matrices for all products
+
+    Data.outbound_combination_matrices: dict
+        Dictionary of outbound combination matrices for all products
+
+    Data.dimF: int
+        Σ|F| (total number of factories across all products)
+
+    Data.dimFC: int
+        Σ|FxC| (total number of factories x customers across all products)
+
+    Outputs to data.py
+    ------------------
     Data.inbound_capacity_matrix: numpy.ndarray
         All zero matrix representing the inbound
         section of the joint capacity constraints.
@@ -274,6 +364,11 @@ def generate_capacity_matrix():
     Data.capacity_matrix: numpy.ndarray
         Capacity matrix to realize the factories' production capacity,
         made by concatenating the inbound and outbound capacity matrix.
+
+    Data.capacity_rows: int
+        Dimension of the capacity part of the constraints vector,
+        calculate by taking the union of all the factories across
+        all products.
 
     """
 
@@ -356,11 +451,33 @@ def generate_capacity_matrix():
     ), 'Dimension of outbound capacity matrix is incorrect (' \
        'Data.capacity_rows, Σ|FxC|)'
 
+    # Horizontally stack the inbound and outbound section to form the full
+    # capacity matrix
+    Data.capacity_matrix = np.hstack(
+        [Data.inbound_capacity_matrix, Data.outbound_capacity_matrix])
+
 
 def generate_supply_matrix():
     """
-    Output to data.py
-    ----------------------
+    Inputs to data.py
+    -----------------
+    Data.supply_constraints: list
+        List of supply constraints for by product combinations
+
+    Data.inbound_combination_matrices: dict
+        Dictionary of inbound combination matrices for all products
+
+    Data.outbound_combination_matrices: dict
+        Dictionary of outbound combination matrices for all products
+
+    Data.dimF: int
+        Σ|F| (total number of factories across all products)
+
+    Data.dimFC: int
+        Σ|FxC| (total number of factories x customers across all products)
+
+    Outputs to data.py
+    ------------------
     Data.inbound_supply_matrix: numpy.ndarray
         Sum of the inbound combination matrices, use to represent the
         joint constraints on supply of factories. For example, to
@@ -385,6 +502,12 @@ def generate_supply_matrix():
     Data.supply_matrix: numpy.ndarray
         Supply matrix to realize the factories' production supply,
         made by concatenating the inbound and outbound supply matrix.
+
+    Data.supply_rows: int
+        Dimension of the supply part of the constraints vector,
+        calculate by taking the union of all the factories across
+        all products.
+
 
     """
 
@@ -477,3 +600,156 @@ def generate_supply_matrix():
         Data.supply_rows, Data.dimFC
     ), 'Dimension of outbound supply matrix is incorrect (Data.supply_rows, ' \
        'Σ|FxC|)'
+
+    # Horizontally stack the inbound and outbound section to form the full
+    # supply matrix
+    Data.supply_matrix = np.hstack(
+        [Data.inbound_supply_matrix, Data.outbound_supply_matrix])
+
+
+def generate_constraints_matrix():
+    """
+    Inputs to data.py
+    -----------------
+    Data.demand_matrix: numpy.ndarray
+        Demand matrix to realize customers' demand, made by horizontally
+        concatenate the inbound and outbound demand matrix.
+
+    Data.capacity_matrix: numpy.ndarray
+        Capacity matrix to realize the factories' production capacity,
+        made by concatenating the inbound and outbound capacity matrix.
+
+    Data.supply_matrix: numpy.ndarray
+        Supply matrix to realize the factories' production supply,
+        made by concatenating the inbound and outbound supply matrix.
+
+    Data.dimF: int
+        Σ|F| (total number of factories across all products)
+
+    Data.dimC: int
+        Σ|C| (total number of customers across all products)
+
+    Data.dimFC: int
+        Σ|FxC| (total number of factories x customers across all products)
+
+    Data.capacity_rows: int
+        Dimension of the capacity part of the constraints vector,
+        calculate by taking the union of all the factories across
+        all products.
+
+    Data.supply_rows: int
+        Dimension of the supply part of the constraints vector,
+        calculate by taking the union of all the factories across
+        all products.
+
+    Outputs to data.py
+    ------------------
+    Data.constraints_matrix: numpy.ndarray
+        Constraints matrix to implement demand, capacity, supply constraints
+    """
+
+    Data.constraints_matrix = np.vstack([Data.demand_matrix,
+                                         Data.capacity_matrix,
+                                         Data.supply_matrix])
+
+    assert Data.constraints_matrix.shape == (Data.dimC + Data.capacity_rows
+                                             + Data.supply_rows, Data.dimF +
+                                             Data.dimFC), 'Constraints ' \
+                                                          'matrix dimension ' \
+                                                          'is incorrect, ' \
+                                                          '(Σ|C| + #cap_rows ' \
+                                                          '' \
+                                                          '' \
+                                                          '' \
+                                                          '' \
+                                                          '+ # sup_rows, ' \
+                                                          'Σ|F| + Σ|FxC|)'
+
+    assert Data.constraints_matrix.shape == Data.constraints_matrix[
+                                            :, ~np.all(
+        Data.constraints_matrix == 0, axis=0)
+                                            ][
+        ~np.all(Data.constraints_matrix == 0, axis=1)
+    ].shape, 'Constraints matrix contains columns or rows with all zeros'
+
+
+def generate_constraints_vector():
+    """
+    Inputs from data.py:
+    --------------------
+    Data.demand_volume: numpy.ndarray
+        Vector defining the demand constraints associated with
+        the demand matrix.
+        #Dimension: Σ|C| (number of customers across all products)
+
+    Data.capacity_volume: numpy.ndarray
+        Vector defining the capacity constraints associated with
+        the capacity matrix
+        #Dimension: #cap_rows (calculate by taking the union of all
+        the factories across all products)
+
+    Data.dimC: int
+        Σ|C| (number of customers across all products)
+
+    Data.capacity_rows: int
+        Dimension of the capacity part of the constraints vector,
+        calculate by taking the union of all the factories across
+        all products.
+
+    Data.supply_rows: int
+        Dimension of the supply part of the constraints vector,
+        calculate by taking the union of all the factories across
+        all products.
+
+    Outputs to data.py:
+    -------------------
+    Data.constraints_vector: numpy.ndarray
+        Vector associated with the constraints matrix, defining
+        the constraints for demand, capacity and supply.
+        #Dimension: Σ|C| + #cap_rows + #sup_rows (number of rows
+        of the constraints matrix)
+
+    """
+
+    # Verify inputs type
+    assert isinstance(
+        Data.demand_volume,
+        np.ndarray), 'Demand constraints vector must be a numpy array'
+
+    assert isinstance(
+        Data.capacity_volume,
+        np.ndarray), 'Capacity constraints vector must be a numpy array'
+
+    # Verify inputs dimension
+    assert np.all(
+        np.array([Data.dimC, Data.capacity_rows, Data.supply_rows]) > 0
+    ), 'Dimension of a section of the constraints vector must be positive'
+
+    assert Data.demand_volume.shape == (
+        Data.dimC,
+        1), 'Dimension of demand constraints vector is incorrect (∑|C|, 1)'
+
+    assert Data.capacity_volume.shape == (
+        Data.capacity_rows, 1
+    ), 'Dimension of capacity constraints vector is incorrect (#caps_rows, 1)'
+
+    # Verify inputs value
+    assert np.all(Data.demand_volume > 0), 'Demand volume has to be positive'
+
+    assert np.all(
+        Data.capacity_volume > 0), 'Capacity volume has to be positive'
+
+    # Stack the subvectors into the full constraints vector
+    Data.constraints_vector = np.vstack([
+        Data.demand_volume, Data.capacity_volume,
+        np.zeros((Data.supply_rows, 1))
+    ])
+
+    # Verify output dimension
+    assert Data.constraints_vector.shape == (
+        Data.dimC + Data.capacity_rows + Data.supply_rows,
+        1), 'Constraints vector is incorrect (Σ|C| + #cap_rows + #sup_rows)'
+
+
+def optimize():
+    pass
