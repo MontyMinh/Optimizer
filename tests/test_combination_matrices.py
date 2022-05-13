@@ -1,15 +1,16 @@
+import sys  # Get the path to the "model" directory
 import unittest
+
 import numpy as np
 from scipy.linalg import block_diag
-import sys  # Get the path to the "model" directory
 
-sys.path.append("C:\\Users\\monty.minh\\Documents\\Model4.0")
+sys.path.append("C:\\Users\\monty.minh\\Documents\\Optimizer")
 
-from model.modeldata import Data
+from model.data import Data
 from model.optimization import generate_combination_matrices
 
 
-class DataTest:
+class CombinationTest:
     """Class for generating random test inputs and verify that the combination
     matrix is constructed correctly"""
 
@@ -89,7 +90,7 @@ class DataTest:
         # Alternative Inbound Combination Matrix,
         # Here we start by choosing out the appropriate index and
         # replace those elements with the efficiency values
-        DataTest.inbound_combination_matrix = np.zeros(
+        CombinationTest.inbound_combination_matrix = np.zeros(
             (cls.no_factories * cls.no_products,
              cls.no_factories * cls.no_products))
 
@@ -98,14 +99,14 @@ class DataTest:
             for prod in Data.product_list
         ])
 
-        DataTest.inbound_combination_matrix[
+        CombinationTest.inbound_combination_matrix[
             matrix_index, matrix_index] = np.hstack(
             list(Data.efficiency_per_product.values()))
 
-        DataTest.inbound_combination_matrix = \
-            -DataTest.inbound_combination_matrix[
+        CombinationTest.inbound_combination_matrix = \
+            -CombinationTest.inbound_combination_matrix[
              :, ~np.all(
-                DataTest.inbound_combination_matrix == 0, axis=0)]
+                CombinationTest.inbound_combination_matrix == 0, axis=0)]
 
         # Alternative Outbound Combination Matrix
         # Here we just iterate over all the products
@@ -128,31 +129,31 @@ class DataTest:
 
             block_list.append(block_diag(*subblock_list))
 
-        DataTest.outbound_combination_matrix = block_diag(*block_list)
+        CombinationTest.outbound_combination_matrix = block_diag(*block_list)
 
 
 class TestCombinationMatrices(unittest.TestCase):
     def test_combination_matrices(self):
         for _ in range(100):
             # Generate Random Inputs
-            DataTest.generate_random_inputs()
+            CombinationTest.generate_random_inputs()
 
             # Generate the combination matrix
             generate_combination_matrices()
 
             # Generate the alternative combination matrix
-            DataTest.alternative_combination_matrix()
+            CombinationTest.alternative_combination_matrix()
 
             # Check inbound equality
             self.assertTrue(np.array_equal(
                 Data.inbound_combination_matrix,
-                DataTest.inbound_combination_matrix)
+                CombinationTest.inbound_combination_matrix)
             )
 
             # Check outbound equality
             self.assertTrue(np.array_equal(
                 Data.outbound_combination_matrix,
-                DataTest.outbound_combination_matrix)
+                CombinationTest.outbound_combination_matrix)
             )
 
 

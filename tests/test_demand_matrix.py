@@ -1,15 +1,16 @@
+import sys  # Get the path to the "model" directory
 import unittest
+
 import numpy as np
 from scipy.linalg import block_diag
-import sys  # Get the path to the "model" directory
 
-sys.path.append("C:\\Users\\monty.minh\\Documents\\Model4.0")
+sys.path.append("C:\\Users\\monty.minh\\Documents\\Optimizer")
 
-from model.modeldata import Data
+from model.data import Data
 from model.optimization import generate_demand_matrix
 
 
-class DataTest:
+class DemandTest:
     """Class for generating random test inputs and verify that the demand
     matrix is constructed correctly"""
 
@@ -111,11 +112,11 @@ class DataTest:
 class TestDemandMatrix(unittest.TestCase):
     def test_demand_matrix(self):
         for _ in range(100):
-            DataTest.generate_random_inputs()  # Random Inputs
+            DemandTest.generate_random_inputs()  # Random Inputs
             generate_demand_matrix()  # Generate Demand Matrix
 
             self.assertTrue(
-                np.array_equal(DataTest.alternative_demand_matrix(),
+                np.array_equal(DemandTest.alternative_demand_matrix(),
                                Data.demand_matrix)
             )  # Compare the demand matrix, with an alternative method
 

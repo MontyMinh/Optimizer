@@ -1,15 +1,16 @@
-import unittest
-import numpy as np
 import sys  # Get the path to the "model" directory
-sys.path.append("C:\\Users\\monty.minh\\Documents\\Model4.0")
+import unittest
 
-from model.modeldata import Data
+import numpy as np
+
+sys.path.append("C:\\Users\\monty.minh\\Documents\\Optimizer")
+
+from model.data import Data
 from model.optimization import generate_objective_vector
 
 
 # Class generate random inputs
-class DataTest:
-
+class ObjectiveVecTest:
     """Class for generating random test inputs"""
 
     inbound_cost_vector, outbound_cost_vector = None, None
@@ -46,12 +47,15 @@ class DataTest:
             zip(np.arange(len(split_index_in) + 1),
                 np.hsplit(cls.inbound_cost_vector, split_index_in)))
 
+        Data.product_list = list(range(len(Data.inbound_cost_per_product)))
         # Outbound Cost Vector
         dimension_split = [
-            np.random.randint(1, 6, 2) for _ in range(np.random.randint(3, 10))
+            np.random.randint(1, 6, 2) for _ in
+            range(len(Data.inbound_cost_per_product))
         ]
 
-        split_index_out = np.cumsum(np.product(np.vstack(dimension_split), axis=1))
+        split_index_out = np.cumsum(
+            np.product(np.vstack(dimension_split), axis=1))
 
         cls.outbound_cost_vector = np.random.rand(split_index_out[-1])
 
@@ -63,21 +67,23 @@ class DataTest:
                 np.split(cls.outbound_cost_vector, split_index_out[:-1]))
         ])
 
-        cls.objective_vector = np.hstack([cls.inbound_cost_vector, cls.outbound_cost_vector])
+        cls.objective_vector = np.hstack(
+            [cls.inbound_cost_vector, cls.outbound_cost_vector])
 
 
 class TestObjectiveVector(unittest.TestCase):
     def test_objective_vector(self):
-
         """Compare construction with randomly generated random inputs"""
 
         for _ in range(100):  # Test 100 times
             # Generate Random Inbound Inputs
-            DataTest.generate_random_inputs()
+            ObjectiveVecTest.generate_random_inputs()
             # Construct the correct vector
             generate_objective_vector()
 
-            self.assertTrue(np.array_equal(DataTest.objective_vector, Data.objective_vector))  # add assertion here
+            self.assertTrue(np.array_equal(ObjectiveVecTest.objective_vector,
+                                           Data.objective_vector))  # add
+            # assertion here
 
 
 if __name__ == '__main__':

@@ -1,10 +1,10 @@
 from model import *
-from model.modeldata import Data
+from model.data import Data
 
 
 def generate_objective_vector():
     """
-    Output to modeldata.py
+    Output to data.py
     ----------------------
     Data.inbound_cost_vector: numpy.ndarray
         Dimension: Σ|F| (total number of factories across all products)
@@ -27,6 +27,9 @@ def generate_objective_vector():
                       dict), 'Outbound costs must be given in a dictionary'
 
     # Verify length of dictionary
+    print(f'{Data.product_list}')
+    print(f'{Data.inbound_cost_per_product.keys()}')
+    print(f'{Data.outbound_cost_per_product.keys()}')
     assert (len(Data.inbound_cost_per_product) == len(Data.product_list)), \
         'Number of products in Inbound cost per product is incorrect'
     assert (len(Data.outbound_cost_per_product) == len(Data.product_list)), \
@@ -63,7 +66,7 @@ def generate_objective_vector():
 
 def generate_demand_matrix():
     """
-    Output to modeldata.py
+    Output to data.py
     ----------------------
     Data.inbound_demand_matrix: numpy.ndarray
         All zeros matrix for the inbound section of the demand matrix.
@@ -138,7 +141,7 @@ def generate_demand_matrix():
 
 def generate_combination_matrices():
     """
-    Output to modeldata.py
+    Output to data.py
     ----------------------
     Data.inbound_combination_matrices: dict
         Dictionary of block diagonal matrices containing the production
@@ -244,3 +247,233 @@ def generate_combination_matrices():
             np.split(Data.outbound_combination_matrix,
                      len(Data.product_list),
                      axis=0)))
+
+
+def generate_capacity_matrix():
+    """
+    Output to data.py
+    ----------------------
+    Data.inbound_capacity_matrix: numpy.ndarray
+        All zero matrix representing the inbound
+        section of the joint capacity constraints.
+        #Rows: Depends on the number constraints and the
+        intersection of factories in each of the joint combination
+        #Columns: ∑|F| (total number of factories across all products)
+
+    Data.outbound_capacity_matrix: numpy.ndarray
+        Sum of the outbound combination matrices, use to represent the
+        joint constraints on capacity of factories. For example, to
+        limit the capacity of bulk + bag, we add the bulk matrix to
+        the bag matrix.
+        #Rows: Depends on the number constraints and the
+        intersection of factories in each of the joint combination,
+        but will be the same as the inbound capacity matrix.
+        #Columns: ∑|FxC| (total number of factories x customers
+        across all products)
+
+    Data.capacity_matrix: numpy.ndarray
+        Capacity matrix to realize the factories' production capacity,
+        made by concatenating the inbound and outbound capacity matrix.
+
+    """
+
+    # Verify inputs types
+    assert isinstance(Data.capacity_constraints,
+                      list), 'Capacity constraints must be in a list'
+
+    assert isinstance(
+        Data.inbound_combination_matrices,
+        dict), 'Inbound combination matrices must be in a dictionary'
+
+    assert isinstance(
+        Data.outbound_combination_matrices,
+        dict), 'Outbound combination matrices must be in a dictionary'
+
+    # Verify for the case cap_cons = []
+    assert len(Data.capacity_constraints
+               ) > 0, 'At least one capacity constraints must be defined'
+
+    # Verify for the case cap_cons = [[1, 2], []] (The [] is not allowed)
+    assert np.all(
+        np.array([len(cons) for cons in Data.capacity_constraints]) > 0
+    ), 'Capacity constraints cannot be empty'
+
+    # Verify for the case cap_cons = [[1, 2], [1, 2]] (the [1, 2] cannot
+    # repeat)
+    # and also that order doesn't matter ([1, 2] is equivalent to [2, 1])
+    orderless_capacity_constraints = [
+        sorted(cons) for cons in Data.capacity_constraints
+    ]
+
+    assert len({
+        tuple(cons)
+        for cons in orderless_capacity_constraints
+    }) == len(orderless_capacity_constraints
+              ), 'Capacity constraints (in any order) cannot repeat'
+
+    # Verify for the case cap_cons = [[1, 2], [0, 0]] (the [0, 0] is not
+    # allowed)
+    assert np.all(
+        np.array([len(set(cons)) for cons in Data.capacity_constraints]) ==
+        np.array([len(cons) for cons in Data.capacity_constraints])
+    ), 'A single product combination cannot appear more than once in one ' \
+       'constraints'
+
+    # Verify that the capacity combinations are in the original product_list
+    assert set(reduce(lambda a, b: a + b, Data.capacity_constraints)).issubset(
+        set(Data.product_list)), (
+            'Capacity combinations list not valid. ' +
+            'Some products are not in the defined product list')
+
+    # Build the capacity matrix
+    # First build the outbound matrix by adding up all the capacity constraints
+    Data.outbound_capacity_matrix = np.vstack([
+        np.sum(
+            [Data.outbound_combination_matrices[prod] for prod in combination],
+            axis=0) for combination in Data.capacity_constraints
+    ])
+    # Strip away all-zeros rows
+    Data.outbound_capacity_matrix = Data.outbound_capacity_matrix[
+        ~np.all(Data.outbound_capacity_matrix == 0, axis=1)]
+
+    # Then we build the all zero inbound matrix with the same number of rows
+    # as the outbound matrix
+    Data.inbound_capacity_matrix = np.zeros(
+        (Data.outbound_capacity_matrix.shape[0], Data.dimF))
+
+    # Verify output dimensions
+    # Find the number of distinct factories over all the capacity constraints
+    Data.capacity_rows = sum([
+        len(
+            reduce(lambda a, b: a.union(b),
+                   [set(Data.factory_names[prod]) for prod in cons]))
+        for cons in Data.capacity_constraints
+    ])
+
+    # Outbound capacity dimension == (Data.capacity_rows, Σ|FxC|)
+    assert Data.outbound_capacity_matrix.shape == (
+        Data.capacity_rows, Data.dimFC
+    ), 'Dimension of outbound capacity matrix is incorrect (' \
+       'Data.capacity_rows, Σ|FxC|)'
+
+
+def generate_supply_matrix():
+    """
+    Output to data.py
+    ----------------------
+    Data.inbound_supply_matrix: numpy.ndarray
+        Sum of the inbound combination matrices, use to represent the
+        joint constraints on supply of factories. For example, to
+        limit the inbound supply of bulk + bag, we add the bulk matrix
+        to the bag matrix.
+        #Rows: Depends on the number constraints and the
+        intersection of factories in each of the joint combination,
+        but will be the same as the outbound supply matrix.
+        #Columns: ∑|F| (total number of factories across all products)
+
+    Data.outbound_supply_matrix: numpy.ndarray
+        Sum of the outbound combination matrices, use to represent the
+        joint constraints on supply of factories. For example, to
+        limit the outbound supply of bulk + bag, we add the bulk matrix
+        to the bag matrix.
+        #Rows: Depends on the number constraints and the
+        intersection of factories in each of the joint combination,
+        but will be the same as the inbound supply matrix.
+        #Columns: ∑|FxC| (total number of factories x customers
+        across all products)
+
+    Data.supply_matrix: numpy.ndarray
+        Supply matrix to realize the factories' production supply,
+        made by concatenating the inbound and outbound supply matrix.
+
+    """
+
+    # Verify inputs types
+    assert isinstance(
+        Data.inbound_combination_matrices,
+        dict), 'Inbound combination matrices must be in a dictionary'
+
+    assert isinstance(
+        Data.outbound_combination_matrices,
+        dict), 'Outbound combination matrices must be in a dictionary'
+
+    assert isinstance(Data.supply_constraints,
+                      list), 'Supply constraints must be in a list'
+
+    # Verify for the case sup_cons = []
+    assert len(Data.supply_constraints
+               ) > 0, 'At least one supply constraints must be defined'
+
+    # Verify for the case sup_cons = [[1, 2], []] (The [] is not allowed)
+    assert np.all(
+        np.array([len(cons) for cons in Data.supply_constraints]) > 0
+    ), 'supply constraints cannot be empty'
+
+    # Verify for the case sup_cons = [[1, 2], [1, 2]] (the [1, 2] cannot
+    # repeat)
+    # and also that order doesn't matter ([1, 2] is equivalent to [2, 1])
+    orderless_supply_constraints = [
+        sorted(cons) for cons in Data.supply_constraints
+    ]
+
+    assert len({
+        tuple(cons)
+        for cons in orderless_supply_constraints
+    }) == len(orderless_supply_constraints
+              ), 'supply constraints (in any order) cannot repeat'
+
+    # Verify for the case sup_cons = [[1, 2], [0, 0]] (the [0, 0] is not
+    # allowed)
+    assert np.all(
+        np.array([len(set(cons)) for cons in Data.supply_constraints]) ==
+        np.array([len(cons) for cons in Data.supply_constraints])
+    ), 'A single product combination cannot appear more than once in one ' \
+       'constraints'
+
+    # Verify that the supply combinations are in the original product_list
+    assert set(reduce(lambda a, b: a + b, Data.supply_constraints)).issubset(
+        set(Data.product_list)), (
+            'supply combinations list not valid. ' +
+            'Some products are not in the defined product list')
+
+    # Build the supply matrix
+    # First build the inbound matrix by adding up all the supply constraints
+    Data.inbound_supply_matrix = np.vstack([
+        np.sum(
+            [Data.inbound_combination_matrices[prod] for prod in combination],
+            axis=0) for combination in Data.supply_constraints
+    ])
+    # Strip away all-zeros rows
+    Data.inbound_supply_matrix = Data.inbound_supply_matrix[
+        ~np.all(Data.inbound_supply_matrix == 0, axis=1)]
+
+    # Then build the outbound matrix by adding up all the supply constraints
+    Data.outbound_supply_matrix = np.vstack([
+        np.sum(
+            [Data.outbound_combination_matrices[prod] for prod in combination],
+            axis=0) for combination in Data.supply_constraints
+    ])
+    # Strip away all-zeros rows
+    Data.outbound_supply_matrix = Data.outbound_supply_matrix[
+        ~np.all(Data.outbound_supply_matrix == 0, axis=1)]
+
+    # Verify output dimensions
+    # Find the number of distinct factories over all the supply constraints
+    Data.supply_rows = sum([
+        len(
+            reduce(lambda a, b: a.union(b),
+                   [set(Data.factory_names[prod]) for prod in cons]))
+        for cons in Data.supply_constraints
+    ])
+
+    # Inbound supply dimension == (Data.supply_rows, Σ|F|)
+    assert Data.inbound_supply_matrix.shape == (
+        Data.supply_rows, Data.dimF
+    ), 'Dimension of inbound supply matrix is incorrect (Data.supply_rows, ' \
+       'Σ|F|)'
+
+    # Outbound supply dimension == (Data.supply_rows, Σ|FxC|)
+    assert Data.outbound_supply_matrix.shape == (
+        Data.supply_rows, Data.dimFC
+    ), 'Dimension of outbound supply matrix is incorrect (Data.supply_rows, ' \
+       'Σ|FxC|)'

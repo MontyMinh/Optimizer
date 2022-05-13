@@ -1,13 +1,7 @@
-import unittest
-import numpy as np
-from scipy.linalg import block_diag
 import sys  # Get the path to the "model" directory
+import unittest
 
-sys.path.append("C:\\Users\\monty.minh\\Documents\\Model4.0")
-
-from model.modeldata import Data
-from model.optimization import generate_combination_matrices
-from functools import reduce
+sys.path.append("C:\\Users\\monty.minh\\Documents\\Optimizer")
 
 
 class MyTestCase(unittest.TestCase):
