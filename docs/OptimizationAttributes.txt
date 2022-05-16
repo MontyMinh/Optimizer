@@ -63,7 +63,9 @@ objective_vector: numpy.ndarray (both)
 
 demand_matrix: numpy.ndarray (both)
     Demand matrix to realize customers' demand, made by horizontally
-    concatenate the inbound and outbound demand matrix. Used in:
+    concatenate the inbound and outbound demand matrix. This matrix has
+    to be negative to reflect the bigger than or equal to constraints.
+    Used in:
     - generate_demand_matrix (output)
     - generate_constraints_matrix (input)
 
@@ -101,6 +103,9 @@ capacity_constraints: list (preprocessing)
 capacity_matrix: numpy.ndarray (both)
     Capacity matrix to realize the factories' production capacity,
     made by concatenating the inbound and outbound capacity matrix.
+    Since our program only allows for smaller than or equal to constraints,
+    We have to negative the capacity matrix as well as the capacity volume.
+    Used in:
     - generate_capacity_matrix (output)
     - generate_constraints_matrix (input)
 
@@ -154,6 +159,8 @@ constraints_vector: numpy.ndarray (output)
     the constraints for demand, capacity and supply.
     #Dimension: Σ|C| + #cap_rows + #sup_rows (number of rows
     of the constraints matrix)
+    This part has to be negative to turn the smaller than or equal sign
+    to the bigger than or equal sign
     Used in:
     - generate_constraints_vector    
     

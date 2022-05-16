@@ -67,7 +67,7 @@ class RandomInputs:
         assert self.supply_constraints_range[
                    1] <= self.no_products, 'Number of supply_constraints ' \
                                            'cannot exceed the number of ' \
-                                           'factories'
+                                           'products'
 
     def generate(self):
         """Generate Random Pre-Processing Inputs for User Defined Parameters"""

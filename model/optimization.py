@@ -99,6 +99,8 @@ def generate_demand_matrix():
     Data.demand_matrix: numpy.ndarray
         Demand matrix to realize customers' demand, made by horizontally
         concatenate the inbound and outbound demand matrix.
+        This matrix has to be negative to reflect the bigger than or equal to
+        constraints.
 
     """
 
@@ -147,12 +149,12 @@ def generate_demand_matrix():
         'Dimension of outbound demand matrix is incorrect (Σ|C|, Σ|FxC|)'
 
     # Horizontally stack inbound and outbound block into the full demand matrix
-    Data.demand_matrix = np.hstack(
+    Data.demand_matrix = -np.hstack(
         [inbound_demand_matrix, outbound_demand_matrix])
 
     # Verify non-negative
     assert np.all(
-        Data.demand_matrix >= 0), 'Demand matrix must be non-negative'
+        Data.demand_matrix <= 0), 'Demand matrix must be negative'
 
 
 def generate_combination_matrices():
@@ -325,6 +327,8 @@ def generate_capacity_matrix():
     Data.capacity_matrix: numpy.ndarray
         Capacity matrix to realize the factories' production capacity,
         made by concatenating the inbound and outbound capacity matrix.
+        Since our program only allows for smaller than or equal to constraints,
+        We have to negative the capacity matrix as well as the capacity volume
 
     Data.capacity_rows: int
         Dimension of the capacity part of the constraints vector,
@@ -414,8 +418,11 @@ def generate_capacity_matrix():
 
     # Horizontally stack the inbound and outbound section to form the full
     # capacity matrix
-    Data.capacity_matrix = np.hstack(
+    Data.capacity_matrix = -np.hstack(
         [inbound_capacity_matrix, outbound_capacity_matrix])
+
+    assert np.all(
+        Data.capacity_matrix <= 0), 'Capacity matrix must be negative'
 
 
 def generate_supply_matrix():
@@ -647,6 +654,8 @@ def generate_constraints_vector():
         the constraints for demand, capacity and supply.
         #Dimension: Σ|C| + #cap_rows + #sup_rows (number of rows
         of the constraints matrix)
+        This part has to be negative to turn the smaller than or equal sign
+        to the bigger than or equal sign
 
     """
 
@@ -679,7 +688,7 @@ def generate_constraints_vector():
         Data.capacity_volume > 0), 'Capacity volume has to be positive'
 
     # Stack the subvectors into the full constraints vector
-    Data.constraints_vector = np.vstack([
+    Data.constraints_vector = -np.vstack([
         demand_volume, Data.capacity_volume,
         np.zeros((Data.supply_rows, 1))
     ])
@@ -688,6 +697,10 @@ def generate_constraints_vector():
     assert Data.constraints_vector.shape == (
         Data.dimC + Data.capacity_rows + Data.supply_rows,
         1), 'Constraints vector is incorrect (Σ|C| + #cap_rows + #sup_rows)'
+
+    # Verify output values
+    assert np.all(
+        Data.constraints_vector <= 0), 'Constraints vector must be negative'
 
 
 def optimize():
