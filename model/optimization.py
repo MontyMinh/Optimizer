@@ -10,7 +10,7 @@ def generate_objective_vector():
         Dictionary containing the inbound cost to factories for all products
 
     Data.outbound_cost_per_product: dict
-        Dictionary containing the outbound cost to factories fora all products
+        Dictionary containing the outbound cost to factories for all products
 
     Data.dimF: int
         Σ|F| (total number of factories across all products)
@@ -23,15 +23,6 @@ def generate_objective_vector():
 
     Outputs to data.py
     ------------------
-    Data.inbound_cost_vector: numpy.ndarray
-        Dimension: Σ|F| (total number of factories across all products)
-        Major Order: 1.product, 2.factory
-
-    Data.outbound_cost_vector: numpy.ndarray
-        Dimension: Σ|FxC| (total number of factories x customers across
-        all products)
-        Major Order: 1.product, 2.factory, 3.customer
-
     Data.objective_vector: numpy.ndarray
         Objective vector to minimize function value
 
@@ -53,28 +44,28 @@ def generate_objective_vector():
 
     # Reshape dictionary inputs into vectors
     # Unpack inbound cost dictionary and stack into row vector
-    Data.inbound_cost_vector = np.hstack(
+    inbound_cost_vector = np.hstack(
         list(Data.inbound_cost_per_product.values()))
 
     # Unpack outbound cost dictionary in factory-then-customer major
-    Data.outbound_cost_vector = np.hstack([
+    outbound_cost_vector = np.hstack([
         prod.flatten('F') for prod in Data.outbound_cost_per_product.values()
     ])
 
     # Verify output dimension
     # Inbound cost vector dimension = (∑|F|)
-    assert Data.inbound_cost_vector.shape == (
+    assert inbound_cost_vector.shape == (
         Data.dimF,
     ), 'Dimension of the inbound cost vector is incorrect (∑|F|)'
 
     # Outbound cost vector dimension = (∑|FxC|)
-    assert Data.outbound_cost_vector.shape == (
+    assert outbound_cost_vector.shape == (
         Data.dimFC,), 'Dimension of the outbound cost vector is incorrect (' \
                       '∑|FxC|)'
 
     # Horizontally stack inbound and outbound cost into row vectors
     Data.objective_vector = np.hstack(
-        [Data.inbound_cost_vector, Data.outbound_cost_vector])
+        [inbound_cost_vector, outbound_cost_vector])
 
     # Verify positivity
     assert np.all(
@@ -105,19 +96,6 @@ def generate_demand_matrix():
 
     Outputs to data.py
     ------------------
-    Data.inbound_demand_matrix: numpy.ndarray
-        All zeros matrix for the inbound section of the demand matrix.
-        #Rows: Σ|C| (total number of customer across all products)
-        #Columns: Σ|F| (total number of factories across
-        all products)
-        Major order: 1.product, 2.factory, 3.customer
-
-    Data.outbound_demand_matrix: numpy.ndarray
-        Block diagonal matrix for the outbound section of the demand matrix.
-        #Rows: Σ|C| (total number of customer across all products)
-        #Columns: Σ|FxC| (total number of factories x customer across
-        all products)
-
     Data.demand_matrix: numpy.ndarray
         Demand matrix to realize customers' demand, made by horizontally
         concatenate the inbound and outbound demand matrix.
@@ -153,11 +131,11 @@ def generate_demand_matrix():
 
     # Reshape dictionary inputs into matrices
     # Construct zero inbound cost matrix (Σ|C|, Σ|F|)
-    Data.inbound_demand_matrix = np.zeros(
+    inbound_demand_matrix = np.zeros(
         (Data.dimC, Data.dimF))  # Demand Inbound Block
 
     # Construct block diagonal outbound cost matrix (Σ|C|, Σ|FxC|)
-    Data.outbound_demand_matrix = block_diag(*[
+    outbound_demand_matrix = block_diag(*[
         np.tile(np.eye(Data.customer_sizes[product]),
                 reps=Data.factory_sizes[product])
         for product in Data.product_list
@@ -165,12 +143,12 @@ def generate_demand_matrix():
 
     # Verify output dimension
     # Outbound demand matrix dimension = (Σ|C|, Σ|FxC|)
-    assert Data.outbound_demand_matrix.shape == (Data.dimC, Data.dimFC), \
+    assert outbound_demand_matrix.shape == (Data.dimC, Data.dimFC), \
         'Dimension of outbound demand matrix is incorrect (Σ|C|, Σ|FxC|)'
 
     # Horizontally stack inbound and outbound block into the full demand matrix
     Data.demand_matrix = np.hstack(
-        [Data.inbound_demand_matrix, Data.outbound_demand_matrix])
+        [inbound_demand_matrix, outbound_demand_matrix])
 
     # Verify non-negative
     assert np.all(
@@ -265,7 +243,7 @@ def generate_combination_matrices():
         eff_arr
         for eff_arr in np.hstack(list(Data.efficiency_per_product.values())))
 
-    Data.inbound_combination_matrix = -block_diag(*[
+    inbound_combination_matrix = -block_diag(*[
         block_diag(*block) for block in [[
             next(efficiency_array)
             if factory in Data.factory_names[product] else []
@@ -281,7 +259,7 @@ def generate_combination_matrices():
     block_diag on all the previous blocks.
     """
 
-    Data.outbound_combination_matrix = block_diag(*[
+    outbound_combination_matrix = block_diag(*[
         block_diag(*block)
         for block in [
             [
@@ -294,12 +272,12 @@ def generate_combination_matrices():
 
     # Verify matrix dimension
     # Inbound combination matrix dimension == (Σ#Fx#P, Σ|C|)
-    assert Data.inbound_combination_matrix.shape == (
+    assert inbound_combination_matrix.shape == (
         len(Data.factory_list) * len(Data.product_list), Data.dimF
     ), 'Dimension of inbound combination matrix is incorrect (Σ#Fx#P, Σ|F|)'
 
     # Outbound combination matrix dimension == (Σ#Fx#P, Σ|FxC|)
-    assert Data.outbound_combination_matrix.shape == (
+    assert outbound_combination_matrix.shape == (
         len(Data.factory_list) * len(Data.product_list),
         Data.dimFC), 'Dimension of combination matrix is incorrect (Σ#Fx#P, ' \
                      'Σ|FxC|)'
@@ -309,7 +287,7 @@ def generate_combination_matrices():
     Data.inbound_combination_matrices = dict(
         zip(
             Data.product_list,
-            np.split(Data.inbound_combination_matrix,
+            np.split(inbound_combination_matrix,
                      len(Data.product_list),
                      axis=0)))
 
@@ -317,7 +295,7 @@ def generate_combination_matrices():
     Data.outbound_combination_matrices = dict(
         zip(
             Data.product_list,
-            np.split(Data.outbound_combination_matrix,
+            np.split(outbound_combination_matrix,
                      len(Data.product_list),
                      axis=0)))
 
@@ -343,24 +321,6 @@ def generate_capacity_matrix():
 
     Outputs to data.py
     ------------------
-    Data.inbound_capacity_matrix: numpy.ndarray
-        All zero matrix representing the inbound
-        section of the joint capacity constraints.
-        #Rows: Depends on the number constraints and the
-        intersection of factories in each of the joint combination
-        #Columns: ∑|F| (total number of factories across all products)
-
-    Data.outbound_capacity_matrix: numpy.ndarray
-        Sum of the outbound combination matrices, use to represent the
-        joint constraints on capacity of factories. For example, to
-        limit the capacity of bulk + bag, we add the bulk matrix to
-        the bag matrix.
-        #Rows: Depends on the number constraints and the
-        intersection of factories in each of the joint combination,
-        but will be the same as the inbound capacity matrix.
-        #Columns: ∑|FxC| (total number of factories x customers
-        across all products)
-
     Data.capacity_matrix: numpy.ndarray
         Capacity matrix to realize the factories' production capacity,
         made by concatenating the inbound and outbound capacity matrix.
@@ -422,19 +382,19 @@ def generate_capacity_matrix():
 
     # Build the capacity matrix
     # First build the outbound matrix by adding up all the capacity constraints
-    Data.outbound_capacity_matrix = np.vstack([
+    outbound_capacity_matrix = np.vstack([
         np.sum(
             [Data.outbound_combination_matrices[prod] for prod in combination],
             axis=0) for combination in Data.capacity_constraints
     ])
     # Strip away all-zeros rows
-    Data.outbound_capacity_matrix = Data.outbound_capacity_matrix[
-        ~np.all(Data.outbound_capacity_matrix == 0, axis=1)]
+    outbound_capacity_matrix = outbound_capacity_matrix[
+        ~np.all(outbound_capacity_matrix == 0, axis=1)]
 
     # Then we build the all zero inbound matrix with the same number of rows
     # as the outbound matrix
-    Data.inbound_capacity_matrix = np.zeros(
-        (Data.outbound_capacity_matrix.shape[0], Data.dimF))
+    inbound_capacity_matrix = np.zeros(
+        (outbound_capacity_matrix.shape[0], Data.dimF))
 
     # Verify output dimensions
     # Find the number of distinct factories over all the capacity constraints
@@ -446,7 +406,7 @@ def generate_capacity_matrix():
     ])
 
     # Outbound capacity dimension == (Data.capacity_rows, Σ|FxC|)
-    assert Data.outbound_capacity_matrix.shape == (
+    assert outbound_capacity_matrix.shape == (
         Data.capacity_rows, Data.dimFC
     ), 'Dimension of outbound capacity matrix is incorrect (' \
        'Data.capacity_rows, Σ|FxC|)'
@@ -454,7 +414,7 @@ def generate_capacity_matrix():
     # Horizontally stack the inbound and outbound section to form the full
     # capacity matrix
     Data.capacity_matrix = np.hstack(
-        [Data.inbound_capacity_matrix, Data.outbound_capacity_matrix])
+        [inbound_capacity_matrix, outbound_capacity_matrix])
 
 
 def generate_supply_matrix():
@@ -478,27 +438,6 @@ def generate_supply_matrix():
 
     Outputs to data.py
     ------------------
-    Data.inbound_supply_matrix: numpy.ndarray
-        Sum of the inbound combination matrices, use to represent the
-        joint constraints on supply of factories. For example, to
-        limit the inbound supply of bulk + bag, we add the bulk matrix
-        to the bag matrix.
-        #Rows: Depends on the number constraints and the
-        intersection of factories in each of the joint combination,
-        but will be the same as the outbound supply matrix.
-        #Columns: ∑|F| (total number of factories across all products)
-
-    Data.outbound_supply_matrix: numpy.ndarray
-        Sum of the outbound combination matrices, use to represent the
-        joint constraints on supply of factories. For example, to
-        limit the outbound supply of bulk + bag, we add the bulk matrix
-        to the bag matrix.
-        #Rows: Depends on the number constraints and the
-        intersection of factories in each of the joint combination,
-        but will be the same as the inbound supply matrix.
-        #Columns: ∑|FxC| (total number of factories x customers
-        across all products)
-
     Data.supply_matrix: numpy.ndarray
         Supply matrix to realize the factories' production supply,
         made by concatenating the inbound and outbound supply matrix.
@@ -561,24 +500,24 @@ def generate_supply_matrix():
 
     # Build the supply matrix
     # First build the inbound matrix by adding up all the supply constraints
-    Data.inbound_supply_matrix = np.vstack([
+    inbound_supply_matrix = np.vstack([
         np.sum(
             [Data.inbound_combination_matrices[prod] for prod in combination],
             axis=0) for combination in Data.supply_constraints
     ])
     # Strip away all-zeros rows
-    Data.inbound_supply_matrix = Data.inbound_supply_matrix[
-        ~np.all(Data.inbound_supply_matrix == 0, axis=1)]
+    inbound_supply_matrix = inbound_supply_matrix[
+        ~np.all(inbound_supply_matrix == 0, axis=1)]
 
     # Then build the outbound matrix by adding up all the supply constraints
-    Data.outbound_supply_matrix = np.vstack([
+    outbound_supply_matrix = np.vstack([
         np.sum(
             [Data.outbound_combination_matrices[prod] for prod in combination],
             axis=0) for combination in Data.supply_constraints
     ])
     # Strip away all-zeros rows
-    Data.outbound_supply_matrix = Data.outbound_supply_matrix[
-        ~np.all(Data.outbound_supply_matrix == 0, axis=1)]
+    outbound_supply_matrix = outbound_supply_matrix[
+        ~np.all(outbound_supply_matrix == 0, axis=1)]
 
     # Verify output dimensions
     # Find the number of distinct factories over all the supply constraints
@@ -590,13 +529,13 @@ def generate_supply_matrix():
     ])
 
     # Inbound supply dimension == (Data.supply_rows, Σ|F|)
-    assert Data.inbound_supply_matrix.shape == (
+    assert inbound_supply_matrix.shape == (
         Data.supply_rows, Data.dimF
     ), 'Dimension of inbound supply matrix is incorrect (Data.supply_rows, ' \
        'Σ|F|)'
 
     # Outbound supply dimension == (Data.supply_rows, Σ|FxC|)
-    assert Data.outbound_supply_matrix.shape == (
+    assert outbound_supply_matrix.shape == (
         Data.supply_rows, Data.dimFC
     ), 'Dimension of outbound supply matrix is incorrect (Data.supply_rows, ' \
        'Σ|FxC|)'
@@ -604,7 +543,7 @@ def generate_supply_matrix():
     # Horizontally stack the inbound and outbound section to form the full
     # supply matrix
     Data.supply_matrix = np.hstack(
-        [Data.inbound_supply_matrix, Data.outbound_supply_matrix])
+        [inbound_supply_matrix, outbound_supply_matrix])
 
 
 def generate_constraints_matrix():
