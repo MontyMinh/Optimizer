@@ -156,3 +156,7 @@ constraints_vector: numpy.ndarray (output)
     of the constraints matrix)
     Used in:
     - generate_constraints_vector    
+    
+linear_program: scipy.optimize.optimize.OptimizeResult
+    Result of the linear program. Used in:
+    - optimize
