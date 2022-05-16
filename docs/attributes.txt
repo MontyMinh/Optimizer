@@ -56,9 +56,10 @@ outbound_cost_per_product: dict (preprocessing)
     Dictionary containing the outbound cost to factories for all products. Used in:
     - generate_objective_vector
 
-objective_vector: numpy.ndarray (output)
+objective_vector: numpy.ndarray (both)
     Objective vector to minimize function value. Used in:
-    - generate_objective_vector
+    - generate_objective_vector (output)
+    - optimize (input)
 
 demand_matrix: numpy.ndarray (both)
     Demand matrix to realize customers' demand, made by horizontally
@@ -142,6 +143,11 @@ capacity_volume: numpy.ndarray (preprocessing)
     the factories across all products)
     Used in:
     - generate_constraints_vector
+
+constraints_matrix: numpy.ndarray (both)
+    Constraints matrix to implement demand, capacity, supply constraints. Used in:
+    - generate_constraints_matrix (output)
+    - optimize (input)
 
 constraints_vector: numpy.ndarray (output)
     Vector associated with the constraints matrix, defining

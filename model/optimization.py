@@ -21,8 +21,8 @@ def generate_objective_vector():
     Data.dimFC: int
         Σ|FxC| (total number of factories x customers across all products)
 
-    Outputs to data.py
-    ------------------
+    Output to data.py
+    -----------------
     Data.objective_vector: numpy.ndarray
         Objective vector to minimize function value
 
@@ -94,8 +94,8 @@ def generate_demand_matrix():
     Data.dimFC: int
         Σ|FxC| (total number of factories x customers across all products)
 
-    Outputs to data.py
-    ------------------
+    Output to data.py
+    -----------------
     Data.demand_matrix: numpy.ndarray
         Demand matrix to realize customers' demand, made by horizontally
         concatenate the inbound and outbound demand matrix.
@@ -582,7 +582,7 @@ def generate_constraints_matrix():
         calculate by taking the union of all the factories across
         all products.
 
-    Outputs to data.py
+    Output to data.py
     ------------------
     Data.constraints_matrix: numpy.ndarray
         Constraints matrix to implement demand, capacity, supply constraints
@@ -615,8 +615,8 @@ def generate_constraints_matrix():
 
 def generate_constraints_vector():
     """
-    Inputs from data.py:
-    --------------------
+    Inputs from data.py
+    -------------------
     Data.demand_volume_per_product: dict (preprocessing)
         Vector defining the demand constraints associated with
         the demand matrix per product.
@@ -640,8 +640,8 @@ def generate_constraints_vector():
         calculate by taking the union of all the factories across
         all products.
 
-    Outputs to data.py:
-    -------------------
+    Output to data.py
+    -----------------
     Data.constraints_vector: numpy.ndarray
         Vector associated with the constraints matrix, defining
         the constraints for demand, capacity and supply.
@@ -670,8 +670,7 @@ def generate_constraints_vector():
 
     assert Data.capacity_volume.shape == (
         Data.capacity_rows, 1
-    ), f'Dimension of capacity constraints vector is incorrect (' \
-       f'{Data.capacity_rows}, 1)'
+    ), f'Dimension of capacity constraints vector is incorrect (#caps_rows, 1)'
 
     # Verify inputs value
     assert np.all(demand_volume > 0), 'Demand volume has to be positive'
@@ -693,7 +692,29 @@ def generate_constraints_vector():
 
 def optimize():
 
-    """Method to run all the matrix/vector processing into the optimization"""
+    """
+    Method to run all the matrix/vector processing into the optimization\
+    
+    Inputs to data.py
+    -----------------
+    Data.objective_vector: numpy.ndarray
+        Objective vector to minimize function value.
+    
+    Data.constraints_matrix: numpy.ndarray
+        Constraints matrix to implement demand, capacity, supply constraints.
+    
+    Data.constraints_vector: numpy.ndarray
+        Vector associated with the constraints matrix, defining
+        the constraints for demand, capacity and supply.
+        #Dimension: Σ|C| + #cap_rows + #sup_rows (number of rows
+        of the constraints matrix)
+    
+    Output to data.py
+    -----------------
+    Data.linear_program: scipy.optimize.optimize.OptimizeResult
+        Result of the linear program
+    
+    """
 
     generate_objective_vector()
     generate_demand_matrix()
