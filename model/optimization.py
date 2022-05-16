@@ -691,5 +691,5 @@ def generate_constraints_vector():
         1), 'Constraints vector is incorrect (Σ|C| + #cap_rows + #sup_rows)'
 
 
-def optimize():
+def linear_program():
     pass
