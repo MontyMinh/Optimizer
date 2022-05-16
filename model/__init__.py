@@ -14,4 +14,5 @@ optimization program.
 
 import numpy as np
 from scipy.linalg import block_diag
+from scipy.optimize import linprog
 from functools import reduce

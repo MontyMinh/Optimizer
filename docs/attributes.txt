@@ -129,10 +129,9 @@ supply_rows: int (both)
     - generate_constraints_matrix (input)
     - generate_constraints_vector (input)
 
-demand_volume: numpy.ndarray (preprocessing)
+demand_volume_per_product: dict (preprocessing)
     Vector defining the demand constraints associated with
-    the demand matrix.
-    #Dimension: Σ|C| (number of customers across all products)
+    the demand matrix per product.
     Used in: 
     - generate_constraints_vector
 

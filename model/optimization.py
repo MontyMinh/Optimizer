@@ -617,10 +617,9 @@ def generate_constraints_vector():
     """
     Inputs from data.py:
     --------------------
-    Data.demand_volume: numpy.ndarray
+    Data.demand_volume_per_product: dict (preprocessing)
         Vector defining the demand constraints associated with
-        the demand matrix.
-        #Dimension: Σ|C| (number of customers across all products)
+        the demand matrix per product.
 
     Data.capacity_volume: numpy.ndarray
         Vector defining the capacity constraints associated with
@@ -653,35 +652,36 @@ def generate_constraints_vector():
 
     # Verify inputs type
     assert isinstance(
-        Data.demand_volume,
-        np.ndarray), 'Demand constraints vector must be a numpy array'
+        Data.demand_volume_per_product,
+        dict), 'Demand constraints vector per product must be a numpy array'
 
     assert isinstance(
         Data.capacity_volume,
         np.ndarray), 'Capacity constraints vector must be a numpy array'
+
+    demand_volume = np.hstack(list(Data.demand_volume_per_product.values(
+
+    )))[:, np.newaxis]
 
     # Verify inputs dimension
     assert np.all(
         np.array([Data.dimC, Data.capacity_rows, Data.supply_rows]) > 0
     ), 'Dimension of a section of the constraints vector must be positive'
 
-    assert Data.demand_volume.shape == (
-        Data.dimC,
-        1), 'Dimension of demand constraints vector is incorrect (∑|C|, 1)'
-
     assert Data.capacity_volume.shape == (
         Data.capacity_rows, 1
-    ), 'Dimension of capacity constraints vector is incorrect (#caps_rows, 1)'
+    ), f'Dimension of capacity constraints vector is incorrect (' \
+       f'{Data.capacity_rows}, 1)'
 
     # Verify inputs value
-    assert np.all(Data.demand_volume > 0), 'Demand volume has to be positive'
+    assert np.all(demand_volume > 0), 'Demand volume has to be positive'
 
     assert np.all(
         Data.capacity_volume > 0), 'Capacity volume has to be positive'
 
     # Stack the subvectors into the full constraints vector
     Data.constraints_vector = np.vstack([
-        Data.demand_volume, Data.capacity_volume,
+        demand_volume, Data.capacity_volume,
         np.zeros((Data.supply_rows, 1))
     ])
 
@@ -691,5 +691,21 @@ def generate_constraints_vector():
         1), 'Constraints vector is incorrect (Σ|C| + #cap_rows + #sup_rows)'
 
 
-def linear_program():
-    pass
+def optimize():
+
+    """Method to run all the matrix/vector processing into the optimization"""
+
+    generate_objective_vector()
+    generate_demand_matrix()
+    generate_combination_matrices()
+    generate_capacity_matrix()
+    generate_supply_matrix()
+    generate_constraints_matrix()
+    generate_constraints_vector()
+
+    Data.linear_program = linprog(c=Data.objective_vector,
+                                  A_ub=Data.constraints_matrix,
+                                  b_ub=Data.constraints_vector,
+                                  method='highs')
+
+    assert Data.linear_program.status == 0, Data.linear_program.message
