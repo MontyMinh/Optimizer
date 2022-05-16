@@ -10,7 +10,7 @@ def generate_objective_vector():
         Dictionary containing the inbound cost to factories for all products
 
     Data.outbound_cost_per_product: dict
-        Dictionary containing the outbound cost to factories for all products
+        Dictionary containing the outbound cost from factories to customer for all products.
 
     Data.dimF: int
         Σ|F| (total number of factories across all products)

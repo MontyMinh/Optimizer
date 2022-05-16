@@ -53,7 +53,7 @@ inbound_cost_per_product: dict (preprocessing)
     - generate_objective_vector
 
 outbound_cost_per_product: dict (preprocessing)
-    Dictionary containing the outbound cost to factories for all products. Used in:
+    Dictionary containing the outbound cost from factories to customer for all products. Used in:
     - generate_objective_vector
 
 objective_vector: numpy.ndarray (both)
