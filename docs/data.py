@@ -1,6 +1,6 @@
 class Data:
   
-"""
+    """
     Attributes:
     -----------
     product_list: list (preprocessing)

@@ -214,9 +214,10 @@ def generate_combination_matrices():
                   ), 'Efficiency must be positive'
     assert np.all(
         np.array([len(prod) for prod in
-                  Data.factory_names.values()]) <= 0), 'There are no ' \
+                  Data.factory_names.values()]) >= 0), 'There are no ' \
                                                        'factories to ' \
-                                                       'optimize for!'
+                                                       'optimize for some ' \
+                                                       'products!'
     assert np.all(
         np.array([len(prod) for prod in Data.factory_names.values()]) <= len(
             Data.factory_list)), 'There are more factory names than allowed'

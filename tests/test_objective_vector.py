@@ -37,6 +37,7 @@ class ObjectiveVecTest:
         cls.inbound_cost_vector = np.random.rand(np.random.randint(20, 100))
 
         Data.dimF = len(cls.inbound_cost_vector)  # number of factor-product
+        Data.dimC = 10
 
         split_index_in = np.sort(
             np.random.choice(np.arange(len(cls.inbound_cost_vector)),
@@ -77,10 +78,10 @@ class TestObjectiveVector(unittest.TestCase):
 
         for _ in range(100):  # Test 100 times
             # Generate Random Inbound Inputs
+
             ObjectiveVecTest.generate_random_inputs()
             # Construct the correct vector
             generate_objective_vector()
-
             self.assertTrue(np.array_equal(ObjectiveVecTest.objective_vector,
                                            Data.objective_vector))  # add
             # assertion here
