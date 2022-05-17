@@ -144,7 +144,7 @@ demand_volume_per_product: dict (preprocessing)
 capacity_volume: numpy.ndarray (preprocessing)
     Vector defining the capacity constraints associated with
     the capacity matrix
-    #Dimension: #cap_rows (calculate by taking the union of all
+    #Dimension: (#cap_rows, 1) (calculate by taking the union of all
     the factories across all products)
     Used in:
     - generate_constraints_vector

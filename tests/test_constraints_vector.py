@@ -11,20 +11,13 @@ from model.optimization import generate_constraints_vector
 
 class TestConstraintsVector(unittest.TestCase):
     def test_constraints_vector(self):
-        for _ in range(100):
 
+        for _ in range(100):
             constraints_vector = np.random.rand(np.random.randint(5, 20), 1)
+
             Data.demand_volume, Data.capacity_volume = np.split(
                 constraints_vector,
-                [np.random.randint(2, len(constraints_vector))])
-
-            demand_split = np.split(Data.demand_volume.flatten(), np.unique(
-                np.sort(np.random.choice(np.arange(1, len(Data.demand_volume)),
-                                         size=2))))
-
-            Data.demand_volume_per_product = dict(zip(range(len(demand_split)),
-                                                      [dem.tolist() for dem in
-                                                       demand_split]))
+                [np.random.randint(1, len(constraints_vector))])
 
             constraints_vector = np.vstack(
                 [constraints_vector,
