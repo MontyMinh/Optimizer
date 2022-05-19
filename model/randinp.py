@@ -45,11 +45,13 @@ class RandomInputs:
 
         # Check that the inputs is valid
         assert self.factory_sizes_range[
-                   1] <= self.no_factories, 'The sample size must be smaller '\
+                   1] <= self.no_factories, 'The sample size must be smaller ' \
+                                            '' \
                                             'than the number of factories'
 
         assert self.customer_sizes_range[
-                   1] <= self.no_customers, 'The sample size must be smaller '\
+                   1] <= self.no_customers, 'The sample size must be smaller ' \
+                                            '' \
                                             'than the number of customers'
 
         assert self.efficiency_range[
@@ -153,12 +155,8 @@ class RandomInputs:
             }
         ]
 
-        Data.demand_volume_per_product = dict(
-            zip(Data.product_list, [
-                np.random.uniform(*self.demand_volume_range,
-                                  size=Data.customer_sizes[prod])
-                for prod in Data.product_list
-            ]))
+        Data.demand_volume = np.random.uniform(*self.demand_volume_range,
+                                               size=(Data.dimC, 1))
 
         capacity_rows = sum([
             len(

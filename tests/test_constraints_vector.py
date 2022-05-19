@@ -19,7 +19,7 @@ class TestConstraintsVector(unittest.TestCase):
                 constraints_vector,
                 [np.random.randint(1, len(constraints_vector))])
 
-            constraints_vector = np.vstack(
+            constraints_vector = -np.vstack(
                 [constraints_vector,
                  np.zeros((np.random.randint(5, 20), 1))])
 

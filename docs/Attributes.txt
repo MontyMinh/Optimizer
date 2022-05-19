@@ -1,0 +1,202 @@
+This file contains all the attributes (and their documentation) in the optimizer
+
+Attributes:
+-----------
+# preprocessing.py
+Data.filepath: str (ui)
+    Path to the input xlsx file. Used in:
+    - preprocessing.raw_inputs
+    
+# optimization.py
+Data.product_list: list (preprocessing)
+    List of products to optimize. Used in 
+    - optimization.generate_demand_matrix
+    - optimization.generate_combination_matrices
+
+Data.factory_list: list (preprocessing)
+    List of factories to optimize. Used in:
+    - optimization.generate_combination_matrices
+
+Data.factory_sizes: dict (preprocessing)
+    Dictionary containing the number of factories for all products. Used in:
+    - optimization.generate_demand_matrix
+
+Data.customer_sizes: dict (preprocessing)
+    Dictionary containing the number of customer for all products. Used in:
+    - optimization.generate_demand_matrix
+
+Data.factory_names: dict (preprocessing)
+    Dictionary of factory names for all products. Used in:
+    - optimization.generate_combination_matrices
+
+Data.dimF: int (preprocessing)
+    Σ|F| (total number of factories across all products). Used in:
+    - optimization.generate_objective_vector
+    - optimization.generate_demand_matrix
+    - optimization.generate_combination_matrices
+    - optimization.generate_capacity_matrix
+    - optimization.generate_supply_matrix
+    - optimization.generate_constraints_matrix
+
+Data.dimC: int (preprocessing)
+    Σ|C| (total number of customers across all products). Used in:
+    - optimization.generate_objective_vector
+    - optimization.generate_demand_matrix
+    - optimization.generate_constraints_matrix
+    - optimization.generate_constraints_vector
+
+Data.dimFC: int (preprocessing)
+    Σ|FxC| (total number of factories x customers across all products). Used in:
+    - optimization.generate_objective_vector
+    - optimization.generate_demand_matrix
+    - optimization.generate_combination_matrices
+    - optimization.generate_capacity_matrix
+    - optimization.generate_supply_matrix
+    - optimization.generate_demand_matrix
+
+Data.inbound_cost_per_product: dict (preprocessing)
+    Dictionary containing the inbound cost to factories for all products. Used in:
+    - optimization.generate_objective_vector
+
+Data.outbound_cost_per_product: dict (preprocessing)
+    Dictionary containing the outbound cost from factories to customer for all products. Used in:
+    - optimization.generate_objective_vector
+
+Data.objective_vector: numpy.ndarray (both)
+    Objective vector to minimize function value. Used in:
+    - optimization.generate_objective_vector
+    - optimization.optimize
+    - postprocessing.unpack_results
+
+Data.demand_matrix: numpy.ndarray (both)
+    Demand matrix to realize customers' demand, made by horizontally
+    concatenate the inbound and outbound demand matrix. This matrix has
+    to be negative to reflect the bigger than or equal to constraints.
+    Used in:
+    - optimization.generate_demand_matrix
+    - optimization.generate_constraints_matrix
+
+Data.efficiency_per_product: dict (preprocessing)
+    Dictionary of efficiency of all factories for all products. Used in:
+    - optimization.generate_combination_matrices
+
+Data.inbound_combination_matrices: dict (both)
+    Dictionary of block diagonal matrices containing the production
+    efficiency of a factory {product: associated matrix}. Each
+    product corresponds to a matrix with:
+        - #Columns: ∑|F| (total number of factories across all products)
+        - #Rows: # Factories (total number of factories)
+    Used in:
+    - optimization.generate_combination_matrices
+    - optimization.generate_supply_matrix
+
+Data.outbound_combination_matrices: dict
+    Dictionary of block diagonal matrices to apply outbound constraints
+    on a per-factory basis. {product: associated matrix}. Each product
+    corresponds to a matrix with:
+        - #Column: ∑|FxC| (total number of factories x customers
+        across all products)
+        - #Rows: # Factories (total
+        number of factories)
+    Used in:
+    - optimization.generate_combination_matrices
+    - optimization.generate_capacity_matrix
+    - optimization.generate_supply_matrix
+
+Data.capacity_constraints: list (preprocessing)
+    List of capacity constraints for by product combinations. Used in:
+    - optimization.generate_capacity_matrix
+
+Data.capacity_matrix: numpy.ndarray
+    Capacity matrix to realize the factories' production capacity,
+    made by concatenating the inbound and outbound capacity matrix.
+    Since our program only allows for smaller than or equal to constraints,
+    Used in:
+    - optimization.generate_capacity_matrix
+    - optimization.generate_constraints_matrix
+
+Data.capacity_rows: int
+    Dimension of the capacity part of the constraints vector,
+    calculate by taking the union of all the factories across
+    all products. Used in:
+    - optimization.generate_capacity_matrix
+    - optimization.generate_constraints_matrix
+    - optimization.generate_constraints_vector
+
+Data.supply_constraints: list (preprocessing)
+    List of supply constraints for by product combinations. Used in:
+    - optimization.generate_supply_matrix
+
+Data.supply_matrix: numpy.ndarray
+    Supply matrix to realize the factories' production supply,
+    made by concatenating the inbound and outbound supply matrix.
+    - optimization.generate_supply_matrix
+    - optimization.generate_constraints_matrix
+
+Data.supply_rows: int
+    Dimension of the supply part of the constraints vector,
+    calculate by taking the union of all the factories across
+    all products. Used in:
+    - optimization.generate_supply_matrix
+    - optimization.generate_constraints_matrix
+    - optimization.generate_constraints_vector
+
+Data.demand_volume: numpy.ndarray (preprocessing)
+    Vector defining the demand constraints associated with
+    the demand matrix.
+    #Dimension: (Σ|C|, 1) (number of customers across all products)
+    Used in: 
+    - optimization.generate_constraints_vector
+
+Data.capacity_volume: numpy.ndarray (preprocessing)
+    Vector defining the capacity constraints associated with
+    the capacity matrix
+    #Dimension: (#cap_rows, 1) (calculate by taking the union of all
+    the factories across all products)
+    Used in:
+    - optimization.generate_constraints_vector
+
+Data.constraints_matrix: numpy.ndarray
+    Constraints matrix to implement demand, capacity, supply constraints. Used in:
+    - optimization.generate_constraints_matrix
+    - optimization.optimize
+
+Data.constraints_vector: numpy.ndarray
+    Vector associated with the constraints matrix, defining
+    the constraints for demand, capacity and supply.
+    #Dimension: Σ|C| + #cap_rows + #sup_rows (number of rows
+    of the constraints matrix)
+    This part has some negative signs on the demand part to
+    account for the bigger than or equal constraints
+    Used in:
+    - optimization.generate_constraints_vector
+    
+Data.linear_program: scipy.optimize.optimize.OptimizeResult
+    Result of the linear program. Used in:
+    - optimization.optimize
+    - postprocessing.unpack_results
+
+# postprocessing.py
+PostProcessing uses Data.objective_vector and Data.linear_program
+
+In addition,
+
+Results.volume: list
+    List of customers' volumes by optimization instances. Used in:
+    - postprocessing.unpack_results
+    - postprocessing.save_to_excel
+
+Results.price: list
+    List of customers' prices by optimization instances. Used in:
+    - postprocessing.unpack_results
+    - postprocessing.save_to_excel
+
+Results.split: int
+    Index to split the above vector into inbound / outbound. Used in:
+    - postprocessing.unpack_results
+    - postprocessing.save_to_excel
+
+Results.save_location: str (filepath)
+    Path to save output Excel file. Used in:
+    - postprocessing.save_to_excel
+

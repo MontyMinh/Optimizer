@@ -10,7 +10,8 @@ def generate_objective_vector():
         Dictionary containing the inbound cost to factories for all products
 
     Data.outbound_cost_per_product: dict
-        Dictionary containing the outbound cost from factories to customer for all products.
+        Dictionary containing the outbound cost from factories to customer
+        for all products.
 
     Data.dimF: int
         Σ|F| (total number of factories across all products)
@@ -65,7 +66,7 @@ def generate_objective_vector():
 
     # Horizontally stack inbound and outbound cost into row vectors
     Data.objective_vector = np.hstack(
-        [inbound_cost_vector, outbound_cost_vector])
+        [inbound_cost_vector, outbound_cost_vector]).astype(np.float64)
 
     # Verify positivity
     assert np.all(
@@ -327,8 +328,6 @@ def generate_capacity_matrix():
     Data.capacity_matrix: numpy.ndarray
         Capacity matrix to realize the factories' production capacity,
         made by concatenating the inbound and outbound capacity matrix.
-        Since our program only allows for smaller than or equal to constraints,
-        We have to negative the capacity matrix as well as the capacity volume
 
     Data.capacity_rows: int
         Dimension of the capacity part of the constraints vector,
@@ -418,11 +417,11 @@ def generate_capacity_matrix():
 
     # Horizontally stack the inbound and outbound section to form the full
     # capacity matrix
-    Data.capacity_matrix = -np.hstack(
+    Data.capacity_matrix = np.hstack(
         [inbound_capacity_matrix, outbound_capacity_matrix])
 
     assert np.all(
-        Data.capacity_matrix <= 0), 'Capacity matrix must be negative'
+        Data.capacity_matrix >= 0), 'Capacity matrix must be non-negative'
 
 
 def generate_supply_matrix():
@@ -455,7 +454,6 @@ def generate_supply_matrix():
         calculate by taking the union of all the factories across
         all products.
 
-
     """
 
     # Verify inputs types
@@ -477,7 +475,7 @@ def generate_supply_matrix():
     # Verify for the case sup_cons = [[1, 2], []] (The [] is not allowed)
     assert np.all(
         np.array([len(cons) for cons in Data.supply_constraints]) > 0
-    ), 'supply constraints cannot be empty'
+    ), 'Supply constraints cannot be empty'
 
     # Verify for the case sup_cons = [[1, 2], [1, 2]] (the [1, 2] cannot
     # repeat)
@@ -490,7 +488,7 @@ def generate_supply_matrix():
         tuple(cons)
         for cons in orderless_supply_constraints
     }) == len(orderless_supply_constraints
-              ), 'supply constraints (in any order) cannot repeat'
+              ), 'Supply constraints (in any order) cannot repeat'
 
     # Verify for the case sup_cons = [[1, 2], [0, 0]] (the [0, 0] is not
     # allowed)
@@ -503,7 +501,7 @@ def generate_supply_matrix():
     # Verify that the supply combinations are in the original product_list
     assert set(reduce(lambda a, b: a + b, Data.supply_constraints)).issubset(
         set(Data.product_list)), (
-            'supply combinations list not valid. ' +
+            'Supply combinations list not valid. ' +
             'Some products are not in the defined product list')
 
     # Build the supply matrix
@@ -609,6 +607,7 @@ def generate_constraints_matrix():
                                                           '' \
                                                           '' \
                                                           '' \
+                                                          '' \
                                                           '+ # sup_rows, ' \
                                                           'Σ|F| + Σ|FxC|)'
 
@@ -624,14 +623,15 @@ def generate_constraints_vector():
     """
     Inputs from data.py
     -------------------
-    Data.demand_volume_per_product: dict (preprocessing)
+    Data.demand_volume: numpy.ndarray
         Vector defining the demand constraints associated with
-        the demand matrix per product.
+        the demand matrix.
+        #Dimension: (Σ|C|, 1) (number of customers across all products)
 
     Data.capacity_volume: numpy.ndarray
         Vector defining the capacity constraints associated with
         the capacity matrix
-        #Dimension: #cap_rows (calculate by taking the union of all
+        #Dimension: (#cap_rows, 1) (calculate by taking the union of all
         the factories across all products)
 
     Data.dimC: int
@@ -653,26 +653,26 @@ def generate_constraints_vector():
         Vector associated with the constraints matrix, defining
         the constraints for demand, capacity and supply.
         #Dimension: Σ|C| + #cap_rows + #sup_rows (number of rows
-        of the constraints matrix)
-        This part has to be negative to turn the smaller than or equal sign
-        to the bigger than or equal sign
+        of the constraints matrix) 
+        This part has some negative signs on the demand part to
+        account for the bigger than or equal constraints
 
     """
 
     # Verify inputs type
     assert isinstance(
-        Data.demand_volume_per_product,
-        dict), 'Demand constraints vector per product must be a numpy array'
+        Data.demand_volume,
+        np.ndarray), 'Demand constraints vector must be a numpy array'
 
     assert isinstance(
         Data.capacity_volume,
         np.ndarray), 'Capacity constraints vector must be a numpy array'
 
-    demand_volume = np.hstack(list(Data.demand_volume_per_product.values(
-
-    )))[:, np.newaxis]
-
     # Verify inputs dimension
+    assert Data.demand_volume.shape == (
+        Data.dimC,
+        1), 'Dimension of demand constraints vector is incorrect (∑|C|, 1)'
+
     assert np.all(
         np.array([Data.dimC, Data.capacity_rows, Data.supply_rows]) > 0
     ), 'Dimension of a section of the constraints vector must be positive'
@@ -682,14 +682,14 @@ def generate_constraints_vector():
     ), f'Dimension of capacity constraints vector is incorrect (#caps_rows, 1)'
 
     # Verify inputs value
-    assert np.all(demand_volume > 0), 'Demand volume has to be positive'
+    assert np.all(Data.demand_volume > 0), 'Demand volume has to be positive'
 
     assert np.all(
         Data.capacity_volume > 0), 'Capacity volume has to be positive'
 
     # Stack the subvectors into the full constraints vector
-    Data.constraints_vector = -np.vstack([
-        demand_volume, Data.capacity_volume,
+    Data.constraints_vector = np.vstack([
+        -Data.demand_volume, Data.capacity_volume,
         np.zeros((Data.supply_rows, 1))
     ])
 
@@ -698,13 +698,8 @@ def generate_constraints_vector():
         Data.dimC + Data.capacity_rows + Data.supply_rows,
         1), 'Constraints vector is incorrect (Σ|C| + #cap_rows + #sup_rows)'
 
-    # Verify output values
-    assert np.all(
-        Data.constraints_vector <= 0), 'Constraints vector must be negative'
-
 
 def optimize():
-
     """
     Method to run all the matrix/vector processing into the optimization\
     
@@ -729,6 +724,7 @@ def optimize():
     
     """
 
+    # Generating the necessary vectors and matrices
     generate_objective_vector()
     generate_demand_matrix()
     generate_combination_matrices()
@@ -737,9 +733,20 @@ def optimize():
     generate_constraints_matrix()
     generate_constraints_vector()
 
-    Data.linear_program = linprog(c=Data.objective_vector,
-                                  A_ub=Data.constraints_matrix,
-                                  b_ub=Data.constraints_vector,
-                                  method='highs')
+    # Run Linear Program
+    lp = linprog(c=Data.objective_vector,
+                 A_ub=Data.constraints_matrix,
+                 b_ub=Data.constraints_vector,
+                 method='highs')
 
-    assert Data.linear_program.status == 0, Data.linear_program.message
+    assert lp.status == 0, lp.message
+
+    # Get only the results and delete everything else
+    Data.linear_program = lp.x
+    del lp
+
+    assert np.all(
+        Data.linear_program >= 0), 'Optimized volume must be non-negative'
+
+    assert not np.isclose(np.sum(Data.linear_program),
+                          0), 'Optimized volume cannot be all zeros'
