@@ -2,6 +2,7 @@ from model import *
 
 print("Define a file path to the Excel input file")
 print("Define a file path to save the Excel output file")
+print("\nData.filepath = \nResults.save_location = ")
 
 
 class Data:
@@ -25,3 +26,6 @@ class Results:
     Online: www.github.com/MontyMinh/Optimizer/blob/main/docs/Attributes.txt
 
     """
+
+    volume = []
+    price = []

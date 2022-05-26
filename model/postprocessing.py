@@ -1,7 +1,6 @@
 from model import *
 from model.data import Data, Results
 
-
 def unpack_results():
     """
     Unpack the program results into a volume vector
@@ -37,8 +36,7 @@ def unpack_results():
 def delete_optimization_data():
     """Method to delete Data to free up memory"""
 
-    del Data
-    gc.collect()
+    pass
 
 
 def save_to_excel():
@@ -77,5 +75,10 @@ def postprocess():
     """Run postprocess methods"""
 
     unpack_results()
-    delete_optimization_data()
+
+    # Free up memory
+    _ = [delattr(Data, attr) for attr in dir(Data) if attr[:2] != '__']
+    del _
+    gc.collect()
+
     save_to_excel()
