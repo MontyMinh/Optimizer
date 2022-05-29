@@ -56,7 +56,7 @@ def raw_inputs():
     # Data.factory_name/s (df temporary stores the work sheet)
     df = pd.read_excel(Data.filepath,
                        sheet_name='Factory Per Product',
-                       index_col='PRODUCT')
+                       index_col=0)
 
     Data.factory_names = {
         prod: df.columns[df.loc[prod]].tolist()
@@ -68,7 +68,7 @@ def raw_inputs():
     # Data.inbound_cost_per_product
     df = pd.read_excel(Data.filepath,
                        sheet_name='Inbound Cost Per Product',
-                       index_col='PRODUCT')
+                       index_col=0)
 
     Data.inbound_cost_per_product = {
         prod: df.loc[prod][Data.factory_names[prod]].tolist()
@@ -79,20 +79,23 @@ def raw_inputs():
 
     # Data.outbound_cost_per_product
     df = pd.read_excel(Data.filepath,
-                       sheet_name='Outbound Cost Per Product',
-                       index_col='PRODUCT')
+                       sheet_name='Sales Volume & Outbound Cost',
+                       index_col=0)
 
     Data.outbound_cost_per_product = {
-        prod: np.array(df.loc[prod][Data.factory_names[prod]]).flatten('F')
+        prod: df[df['Sales Product'] == prod][Data.factory_names[prod]].to_numpy().flatten('F')
         for prod in Data.product_list
     }
+
+    # Data.demand_volume
+    Data.demand_volume = df['Sales Volume'].to_numpy()[:, np.newaxis]
 
     del df
 
     # Data.efficiency_per_product
     df = pd.read_excel(Data.filepath,
                        sheet_name='Efficiency Per Product',
-                       index_col='PRODUCT')
+                       index_col=0)
 
     Data.efficiency_per_product = {
         prod: df.loc[prod][Data.factory_names[prod]].tolist()
@@ -104,7 +107,7 @@ def raw_inputs():
     # Data.capacity_constraints # Constraints has to start index from 1
     df = pd.read_excel(Data.filepath,
                        sheet_name='Capacity Constraints',
-                       index_col='CONSTRAINTS')
+                       index_col='CONSTRAINT')
 
     Data.capacity_constraints = [
         df.columns[df.iloc[cons]].tolist() for cons in range(df.shape[0])
@@ -115,7 +118,7 @@ def raw_inputs():
     # Data.supply_constraints # Constraints has to start index from 1
     df = pd.read_excel(Data.filepath,
                        sheet_name='Supply Constraints',
-                       index_col='CONSTRAINTS')
+                       index_col='CONSTRAINT')
 
     Data.supply_constraints = [
         df.columns[df.iloc[cons]].tolist() for cons in range(df.shape[0])
@@ -126,14 +129,10 @@ def raw_inputs():
     # Data.capacity_volume
     Data.capacity_volume = pd.read_excel(
         Data.filepath, sheet_name='Capacity Volume',
-        index_col='CONSTRAINTS').to_numpy().flatten()
+        index_col='CONSTRAINT').to_numpy().flatten()
 
     Data.capacity_volume = Data.capacity_volume[~np.isnan(Data.capacity_volume
                                                           )][:, np.newaxis]
-
-    # Data.demand_volume
-    Data.demand_volume = pd.read_excel(
-        Data.filepath, sheet_name='Demand Volume').VOLUME.to_numpy()[:, np.newaxis]
 
 
 def processed_inputs():
@@ -201,5 +200,5 @@ def preprocess():
     # Retrieve the inputs
     raw_inputs()
     processed_inputs()
-
+    
     # Assert logicality of inputs

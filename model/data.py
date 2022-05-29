@@ -28,4 +28,4 @@ class Results:
     """
 
     volume = []
-    price = []
+    cost = []
