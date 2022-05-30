@@ -2,7 +2,7 @@ from model import *
 from model.data import Data, Results
 
 
-def unpack_results():
+def postprocess():
     """
     Unpack the program results into a volume vector
     and a cost vector.
@@ -21,7 +21,6 @@ def unpack_results():
     Results.split: int
         Index to split the above vector into inbound / outbound
     """
-
     # Unpack Volume
     Results.volume.append(Data.linear_program[:, np.newaxis])
 
@@ -51,9 +50,17 @@ def save_to_excel():
     def quick_save(df, name): return df.to_excel(
         writer, name, index=False, header=True, startrow=0, startcol=0)
 
+    # Generate the inbound template
+    inbound_prefix = pd.DataFrame(data=np.vstack([
+        np.hstack([Data.factory_names[prod] for prod in Data.product_list]),
+        np.hstack([[prod for elem in Data.factory_names[prod]]
+                   for prod in Data.product_list])
+    ]).T,
+        columns=['Factory', 'Product'])
+
     # Generate the outbound template
     df = pd.read_excel(Data.filepath,
-                       sheet_name="Sales Volume & Outbound Cost")
+                       sheet_name="Customer List")
     outbound_prefix = pd.DataFrame(data=np.vstack([
         np.repeat(df[df['Sales Product'] == prod][[
             'Customer ID', 'Sales Product', 'Province'
@@ -63,19 +70,24 @@ def save_to_excel():
     ]),
         columns=['ID', 'Product', 'Province'])
 
-    outbound_prefix['Factory'] = np.hstack([
-        Data.factory_names[prod] * Data.customer_sizes[prod]
-        for prod in Data.product_list
-    ])
-
-    Results.years = np.arange(2021, 2021+len(Results.volume))
+    # Calculate the list of years
+    Results.years = np.arange(Data.timeframe[0], Data.timeframe[1]+1)
 
     with pd.ExcelWriter(Results.save_location) as writer:
 
         # Inbound Volume
-        '''quick_save(
-            np.hstack(Results.volume)[:Results.split],
-            'Inbound Volume Per Customer')'''
+        df = inbound_prefix.copy()
+        df[Results.years] = np.hstack(
+            Results.volume)[:Results.split]
+        df = df[df[Results.years].sum(axis=1) != 0]
+        quick_save(df, 'Inbound Volume Per Factory')
+
+        # Inbound Cost
+        df = inbound_prefix.copy()
+        df[Results.years] = np.hstack(
+            Results.cost)[:Results.split]
+        df = df[df[Results.years].sum(axis=1) != 0]
+        quick_save(df, 'Inbound Cost Per Factory')
 
         # Outbound Volume
         df = outbound_prefix.copy()
@@ -86,11 +98,6 @@ def save_to_excel():
         df = df[df[Results.years].sum(axis=1) != 0]
         quick_save(df, 'Outbound Volume Per Customer')
 
-        # Inbound Cost
-        '''quick_save(
-            np.hstack(Results.cost)[:Results.split],
-            'Inbound Cost Per Customer')'''
-
         # Outbound Cost
         df = outbound_prefix.copy()
         # Concatenate with the volume per year
@@ -100,23 +107,17 @@ def save_to_excel():
         df = df[df[Results.years].sum(axis=1) != 0]
         quick_save(df, 'Outbound Cost Per Customer')
 
-        del df
 
-
-def postprocess():
-    """Run postprocess methods"""
-
-    unpack_results()
+def free_memory():
+    """Free memory by deleting some Data attributes"""
 
     # Free up memory
     keep = ["filepath", "factory_sizes",
-            "factory_names", "customer_sizes",
-            "product_list", "timeframe"]
+            "factory_names", "product_list",
+            "timeframe"]
     _ = [
         delattr(Data, attr) for attr in dir(Data)
         if (attr[:2] != '__') and (attr not in keep)
     ]
     del _
     gc.collect()
-
-    save_to_excel()
