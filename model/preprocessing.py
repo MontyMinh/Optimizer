@@ -1,12 +1,28 @@
 from model import *
-from model.data import *
+from model.data import Data
+
+
+def get_timeframe():
+    """
+    Get optimization timeframe
+
+    Outputs to data.py
+    ------------------
+    Data.timeframe: list
+        - Pull from "Timeframe"
+
+    """
+    Data.timeframe = list(pd.read_excel(Data.filepath).iloc[0])
+
+    assert Data.timeframe[1] - \
+        Data.timeframe[0] >= 1, 'Timeframe not in ascending order'
 
 
 def raw_inputs():
     """
-    Method to pull data from input Excel files.
+    Pull data from input Excel files.
 
-    Below only includes a shortlist of attributes used 
+    Below only includes a shortlist of attributes used
     and the sheet where the data comes from. For detailed
     documentation, see Attributes.txt
 
@@ -42,9 +58,7 @@ def raw_inputs():
     Data.demand_volume: numpy.ndarray
         - Pull from "Demand Volume"
 
-
     """
-
     # Data.product_list
     Data.product_list = pd.read_excel(
         Data.filepath, sheet_name='Product List')['PRODUCT'].values.tolist()
@@ -83,7 +97,8 @@ def raw_inputs():
                        index_col=0)
 
     Data.outbound_cost_per_product = {
-        prod: df[df['Sales Product'] == prod][Data.factory_names[prod]].to_numpy().flatten('F')
+        prod: df[df['Sales Product'] ==
+                 prod][Data.factory_names[prod]].to_numpy().flatten('F')
         for prod in Data.product_list
     }
 
@@ -188,17 +203,17 @@ def processed_inputs():
 
 
 def preprocess():
-
     """
-    Method to call on the raw and processed inputs, then checks if the inputs
-    are logical through a series of assert statement. After doing this,
+    Call on the raw and processed inputs, then checks if the inputs.
+    are logical through a series of assert statement.
+
+    After doing this,
     if we get an error in an assert statement, we know the values is wrong,
     else we know that the input is not the correct format.
 
     """
-
     # Retrieve the inputs
     raw_inputs()
     processed_inputs()
-    
+
     # Assert logicality of inputs
