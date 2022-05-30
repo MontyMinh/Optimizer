@@ -6,7 +6,7 @@ print("\nData.filepath = \nResults.save_location = ")
 
 
 class Data:
-    
+
     """
     Class to store preprocessing and optimization data
 
@@ -27,5 +27,4 @@ class Results:
 
     """
 
-    volume = []
-    cost = []
+    volume, cost = [], []

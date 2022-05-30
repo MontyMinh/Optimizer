@@ -40,8 +40,11 @@ def raw_inputs():
     Data.inbound_cost_per_product: dict
         - Pull from "Inbound Cost Per Product"
 
+    Data.demand_volume: numpy.ndarray
+        - Pull from "Sales Volume"
+
     Data.outbound_cost_per_product: dict
-        - Pull from "Outbound Cost Per Product"
+        - Pull from "Outbound Cost"
 
     Data.efficiency_per_product: dict
         - Pull from "Efficiency Per Product"
@@ -54,9 +57,6 @@ def raw_inputs():
 
     Data.capacity_volume: numpy.ndarray
         - Pull from "Capacity Volume"
-
-    Data.demand_volume: numpy.ndarray
-        - Pull from "Demand Volume"
 
     """
     # Data.product_list
@@ -73,7 +73,8 @@ def raw_inputs():
                        index_col=0)
 
     Data.factory_names = {
-        prod: df.columns[df.loc[prod]].tolist()
+        prod: [fac for fac in df.columns[df.loc[prod]]
+               if str(Data.year) in fac]
         for prod in Data.product_list
     }
 
@@ -92,9 +93,7 @@ def raw_inputs():
     del df
 
     # Data.outbound_cost_per_product
-    df = pd.read_excel(Data.filepath,
-                       sheet_name='Sales Volume & Outbound Cost',
-                       index_col=0)
+    df = pd.read_excel(Data.filepath, sheet_name='Outbound Cost', index_col=0)
 
     Data.outbound_cost_per_product = {
         prod: df[df['Sales Product'] ==
@@ -103,7 +102,13 @@ def raw_inputs():
     }
 
     # Data.demand_volume
-    Data.demand_volume = df['Sales Volume'].to_numpy()[:, np.newaxis]
+    df = pd.read_excel(Data.filepath, sheet_name='Sales Volume', index_col=0)
+
+    Data.demand_volume = np.hstack([
+        df[df['Sales Product'] == prod][df.columns[
+            2 + Data.year - Data.timeframe[0]]].to_numpy().flatten('F')
+        for prod in Data.product_list
+    ])[:, np.newaxis]
 
     del df
 
@@ -124,8 +129,13 @@ def raw_inputs():
                        sheet_name='Capacity Constraints',
                        index_col='CONSTRAINT')
 
+    df_prod = pd.DataFrame(
+        columns=[prod for prod in df.columns
+                 if str(Data.year) in prod]).columns
+
     Data.capacity_constraints = [
-        df.columns[df.iloc[cons]].tolist() for cons in range(df.shape[0])
+        df_prod[df[df_prod].iloc[cons]].to_list()
+        for cons in range(df.shape[0])
     ]
 
     del df
@@ -135,19 +145,41 @@ def raw_inputs():
                        sheet_name='Supply Constraints',
                        index_col='CONSTRAINT')
 
+    df_prod = pd.DataFrame(
+        columns=[prod for prod in df.columns
+                 if str(Data.year) in prod]).columns
+
     Data.supply_constraints = [
-        df.columns[df.iloc[cons]].tolist() for cons in range(df.shape[0])
+        df_prod[df[df_prod].iloc[cons]].to_list()
+        for cons in range(df.shape[0])
     ]
 
-    del df
+    del df, df_prod
 
     # Data.capacity_volume
     Data.capacity_volume = pd.read_excel(
         Data.filepath, sheet_name='Capacity Volume',
-        index_col='CONSTRAINT').to_numpy().flatten()
+        index_col='CONSTRAINT')[[str(Data.year) + " - " + str(fac)
+                                for fac in Data.factory_list
+                                 ]].to_numpy().flatten()
 
     Data.capacity_volume = Data.capacity_volume[~np.isnan(Data.capacity_volume
                                                           )][:, np.newaxis]
+
+    # Revert the factory_names to simple no year names
+    Data.factory_names = {prod: [fac.strip(str(Data.year) + " - ")
+                                 for fac in Data.factory_names[prod]]
+                          for prod in Data.factory_names}
+
+    # Revert capacity constraints
+    Data.capacity_constraints = [
+        [prod.strip(str(Data.year) + " - ") for prod in cons]
+        for cons in Data.capacity_constraints]
+
+    # Revert supply constraints
+    Data.supply_constraints = [
+        [prod.strip(str(Data.year) + " - ") for prod in cons]
+        for cons in Data.supply_constraints]
 
 
 def processed_inputs():
