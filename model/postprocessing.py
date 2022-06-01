@@ -58,6 +58,9 @@ def save_to_excel():
     ]).T,
         columns=['Factory', 'Product'])
 
+    # Sort by Product then Factory
+    inbound_prefix = inbound_prefix.sort_values(['Product', 'Factory'])
+
     # Generate the outbound template
     df = pd.read_excel(Data.filepath,
                        sheet_name="Customer List")
@@ -70,17 +73,18 @@ def save_to_excel():
     ]),
         columns=['ID', 'Product', 'Province'])
 
+    outbound_prefix['Factory'] = np.hstack([
+        Data.factory_names[prod] * Data.customer_sizes[prod]
+        for prod in Data.product_list
+    ])
+
+    # Sort by Product then Factory
+    outbound_prefix = outbound_prefix.sort_values(['Product', 'Factory'])
+
     # Calculate the list of years
     Results.years = np.arange(Data.timeframe[0], Data.timeframe[1]+1)
 
     with pd.ExcelWriter(Results.save_location) as writer:
-
-        # Inbound Volume
-        df = inbound_prefix.copy()
-        df[Results.years] = np.hstack(
-            Results.volume)[:Results.split]
-        df = df[df[Results.years].sum(axis=1) != 0]
-        quick_save(df, 'Inbound Volume Per Factory')
 
         # Inbound Cost
         df = inbound_prefix.copy()
@@ -88,15 +92,6 @@ def save_to_excel():
             Results.cost)[:Results.split]
         df = df[df[Results.years].sum(axis=1) != 0]
         quick_save(df, 'Inbound Cost Per Factory')
-
-        # Outbound Volume
-        df = outbound_prefix.copy()
-        # Concatenate with the volume per year
-        df[Results.years] = np.hstack(
-            Results.volume)[Results.split:]
-        # Remove all zeros rows
-        df = df[df[Results.years].sum(axis=1) != 0]
-        quick_save(df, 'Outbound Volume Per Customer')
 
         # Outbound Cost
         df = outbound_prefix.copy()
@@ -107,14 +102,30 @@ def save_to_excel():
         df = df[df[Results.years].sum(axis=1) != 0]
         quick_save(df, 'Outbound Cost Per Customer')
 
+        # Inbound Volume
+        df = inbound_prefix.copy()
+        df[Results.years] = np.hstack(
+            Results.volume)[:Results.split]
+        df = df[df[Results.years].sum(axis=1) != 0]
+        quick_save(df, 'Inbound Volume Per Factory')
+
+        # Outbound Volume
+        df = outbound_prefix.copy()
+        # Concatenate with the volume per year
+        df[Results.years] = np.hstack(
+            Results.volume)[Results.split:]
+        # Remove all zeros rows
+        df = df[df[Results.years].sum(axis=1) != 0]
+        quick_save(df, 'Outbound Volume Per Customer')
+
 
 def free_memory():
     """Free memory by deleting some Data attributes"""
 
     # Free up memory
     keep = ["filepath", "factory_sizes",
-            "factory_names", "product_list",
-            "timeframe"]
+            "customer_sizes", "factory_names",
+            "product_list", "timeframe"]
     _ = [
         delattr(Data, attr) for attr in dir(Data)
         if (attr[:2] != '__') and (attr not in keep)
