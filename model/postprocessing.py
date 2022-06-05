@@ -102,13 +102,6 @@ def save_to_excel():
         df = df[df[Results.years].sum(axis=1) != 0]
         quick_save(df, 'Outbound Cost Per Customer')
 
-        # Inbound Volume
-        df = inbound_prefix.copy()
-        df[Results.years] = np.hstack(
-            Results.volume)[:Results.split]
-        df = df[df[Results.years].sum(axis=1) != 0]
-        quick_save(df, 'Inbound Volume Per Factory')
-
         # Outbound Volume
         df = outbound_prefix.copy()
         # Concatenate with the volume per year
