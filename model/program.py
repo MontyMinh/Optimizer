@@ -3,7 +3,6 @@ from model.preprocessing import *
 from model.optimization import *
 from model.postprocessing import *
 
-
 def execute():
     """Execute the Optimizer from end to end"""
 
